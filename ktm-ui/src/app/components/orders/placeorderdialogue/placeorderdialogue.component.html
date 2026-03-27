@@ -1,0 +1,17 @@
+<h2 mat-dialog-title>Place Order ({{data.strike}}) </h2>
+
+<mat-dialog-content class="mat-typography">
+  <mat-radio-group [(ngModel)]="orderType" aria-label="Select an option">
+    <mat-radio-button value="BUY">Buy</mat-radio-button>
+    <mat-radio-button value="SELL">Sell</mat-radio-button>
+  </mat-radio-group>
+  <p>Trading Symbol: {{data.tradingsymbol}}</p>
+  <p>Exchange: {{data.exchange}}</p>
+  <p>Last Price: {{data.last_price}}</p>
+   <p>Lot Size: {{data.lot_size}}</p>
+   <p>Qty: <input id= "qty" type="number" [(ngModel)]="quantity" value="1" min="1" max="100"></p>
+</mat-dialog-content>
+<mat-dialog-actions>
+  <button mat-button mat-dialog-close>Cancel</button>
+  <button mat-button [mat-dialog-close]="{orderType: orderType, quantity: quantity}" cdkFocusInitial>Place Order</button>
+</mat-dialog-actions>

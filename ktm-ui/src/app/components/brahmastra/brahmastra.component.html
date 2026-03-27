@@ -1,0 +1,1149 @@
+<div class="brahmastra-container">
+  <!-- Header -->
+  <div class="brahmastra-header">
+    <div class="header-left">
+      <h4>
+        <mat-icon>track_changes</mat-icon>
+        Brahmastra Strategy
+      </h4>
+      <p class="subtitle">Triple Confirmation Intraday Trading (Supertrend + MACD + VWAP)</p>
+    </div>
+
+    <!-- Auto-Refresh Status -->
+    <div class="realtime-status" [class.connected]="isMarketOpen">
+      <span class="status-dot" [class.market-closed]="!isMarketOpen"></span>
+      <span class="status-text">
+        {{ isMarketOpen ? 'Market Open • Live' : 'Market Closed' }}
+        <span *ngIf="lastRefreshTime" class="last-refresh"> • Updated: {{ lastRefreshTime }}</span>
+      </span>
+    </div>
+
+    <app-live-tick></app-live-tick>
+
+    <div class="header-right">
+      <button mat-raised-button color="accent" (click)="scanAllSymbols()" [disabled]="isScanning">
+        <mat-icon>radar</mat-icon> Scan All
+      </button>
+      <button mat-raised-button color="primary" (click)="refreshDashboard()" [disabled]="isLoadingDashboard">
+        <mat-icon>refresh</mat-icon> Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- PCR Market Bias Bar -->
+  <mat-card class="pcr-bar" *ngIf="pcrData">
+    <div class="pcr-content">
+      <div class="pcr-item">
+        <span class="pcr-label">NIFTY PCR:</span>
+        <span class="pcr-value" [class]="getBiasClass(pcrData.niftyBias)">
+          {{ pcrData.niftyPCR | number:'1.2-2' }}
+        </span>
+        <span class="pcr-bias-badge" [class]="getBiasClass(pcrData.niftyBias)">{{ pcrData.niftyBias }}</span>
+      </div>
+    </div>
+  </mat-card>
+
+  <!-- Main Tabs -->
+  <mat-tab-group animationDuration="0ms" class="brahmastra-tabs">
+
+    <!-- Dashboard Tab -->
+    <mat-tab label="Dashboard">
+      <div class="tab-content">
+        <mat-spinner *ngIf="isLoadingDashboard" diameter="40" class="loading-spinner"></mat-spinner>
+
+        <!-- Summary Cards -->
+        <div class="summary-cards" *ngIf="!isLoadingDashboard && dashboardSummary">
+          <mat-card class="summary-card performance-card">
+            <mat-card-header>
+              <mat-icon mat-card-avatar class="performance-icon">trending_up</mat-icon>
+              <mat-card-title>Today's Performance</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="stat-row">
+                <span class="stat-label">Trades:</span>
+                <span class="stat-value">{{ dashboardSummary.todaysTrades }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">P&amp;L:</span>
+                <span class="stat-value" [class.positive]="dashboardSummary.todaysPnL > 0" [class.negative]="dashboardSummary.todaysPnL < 0">
+                  {{ formatCurrency(dashboardSummary.todaysPnL) }}
+                </span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Win/Loss:</span>
+                <span class="stat-value">{{ dashboardSummary.todaysWinningTrades }} / {{ dashboardSummary.todaysLosingTrades }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Win Rate:</span>
+                <span class="stat-value highlight">{{ dashboardSummary.overallWinRate | number:'1.1-1' }}%</span>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card class="summary-card signals-card">
+            <mat-card-header>
+              <mat-icon mat-card-avatar class="signals-icon">notifications_active</mat-icon>
+              <mat-card-title>Active Signals</mat-card-title>
+              <span class="signal-count-badge">{{ dashboardSummary.activeSignals }}</span>
+            </mat-card-header>
+            <mat-card-content>
+              <div *ngFor="let signal of activeSignals | slice:0:5" class="active-signal-item">
+                <span class="signal-symbol">{{ signal.symbol }}</span>
+                <span class="signal-type-badge" [class]="getSignalClass(signal.signalType)">{{ signal.signalType }}</span>
+                <span class="signal-price">&#64; {{ signal.entryPrice | number:'1.2-2' }}</span>
+              </div>
+              <div *ngIf="activeSignals.length === 0" class="no-signals">
+                <mat-icon>info</mat-icon>
+                <span>No active signals</span>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card class="summary-card health-card">
+            <mat-card-header>
+              <mat-icon mat-card-avatar class="health-icon">health_and_safety</mat-icon>
+              <mat-card-title>Strategy Health</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="health-indicator" [class]="getStatusClass(dashboardSummary.strategyStatus)">
+                <mat-icon>{{ dashboardSummary.strategyStatus === 'HEALTHY' ? 'check_circle' : dashboardSummary.strategyStatus === 'CAUTION' ? 'warning' : 'pause_circle' }}</mat-icon>
+                <span>{{ dashboardSummary.strategyStatus }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">7-Day Win Rate:</span>
+                <span class="stat-value">{{ dashboardSummary.last7DaysWinRate | number:'1.1-1' }}%</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">30-Day Win Rate:</span>
+                <span class="stat-value">{{ dashboardSummary.last30DaysWinRate | number:'1.1-1' }}%</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Current Drawdown:</span>
+                <span class="stat-value negative">{{ dashboardSummary.currentDrawdown | number:'1.2-2' }}%</span>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card class="summary-card bias-card">
+            <mat-card-header>
+              <mat-icon mat-card-avatar class="bias-icon">analytics</mat-icon>
+              <mat-card-title>Market Bias</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="market-bias-display" [class]="getBiasClass(dashboardSummary.currentMarketBias)">
+                <mat-icon>{{ dashboardSummary.currentMarketBias === 'BULLISH' ? 'trending_up' : dashboardSummary.currentMarketBias === 'BEARISH' ? 'trending_down' : 'trending_flat' }}</mat-icon>
+                <span class="bias-text">{{ dashboardSummary.currentMarketBias }}</span>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+
+        <!-- Indicator Metrics Section -->
+        <mat-card class="indicator-metrics-card">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>analytics</mat-icon>
+              Triple Confirmation Indicators
+            </mat-card-title>
+            <div class="symbol-selector">
+              <mat-chip-set>
+                <mat-chip *ngFor="let symbol of symbols"
+                          [attr.highlighted]="selectedMetricsSymbol === symbol ? 'true' : null"
+                          (click)="selectMetricsSymbol(symbol)">
+                  {{ symbol }}
+                </mat-chip>
+              </mat-chip-set>
+            </div>
+          </mat-card-header>
+          <mat-card-content>
+            <mat-spinner *ngIf="isLoadingMetrics" diameter="40" class="loading-spinner"></mat-spinner>
+
+            <div class="indicator-metrics-content" *ngIf="!isLoadingMetrics && selectedSymbolMetrics">
+              <!-- Indicator Summary Cards -->
+              <div class="indicator-summary-grid">
+                <!-- Supertrend Card -->
+                <mat-card class="indicator-card supertrend-card">
+                  <mat-card-header>
+                    <mat-icon mat-card-avatar class="supertrend-icon">show_chart</mat-icon>
+                    <mat-card-title>Supertrend ({{ selectedSymbolMetrics.supertrend?.period || 10 }}, {{ selectedSymbolMetrics.supertrend?.multiplier || 3 }})</mat-card-title>
+                  </mat-card-header>
+                  <mat-card-content>
+                    <div class="indicator-value-large" [class]="getBiasClass(selectedSymbolMetrics.supertrend?.trend || 'NEUTRAL')">
+                      {{ selectedSymbolMetrics.supertrend?.trend || 'N/A' }}
+                    </div>
+                    <div class="indicator-details">
+                      <div class="detail-row">
+                        <span class="detail-label">Value:</span>
+                        <span class="detail-value">{{ selectedSymbolMetrics.supertrend?.value | number:'1.2-2' }}</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">Distance:</span>
+                        <span class="detail-value" [class.positive]="(selectedSymbolMetrics.supertrend?.priceDistancePercent || 0) > 0" [class.negative]="(selectedSymbolMetrics.supertrend?.priceDistancePercent || 0) < 0">
+                          {{ selectedSymbolMetrics.supertrend?.priceDistancePercent | number:'1.2-2' }}%
+                        </span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">Bars in Trend:</span>
+                        <span class="detail-value">{{ selectedSymbolMetrics.supertrend?.consecutiveBars || 0 }}</span>
+                      </div>
+                      <div class="detail-row" *ngIf="selectedSymbolMetrics.supertrend?.isTrendChange">
+                        <span class="trend-change-badge">⚡ Trend Change!</span>
+                      </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+
+                <!-- MACD Card -->
+                <mat-card class="indicator-card macd-card">
+                  <mat-card-header>
+                    <mat-icon mat-card-avatar class="macd-icon">stacked_line_chart</mat-icon>
+                    <mat-card-title>MACD ({{ selectedSymbolMetrics.macd?.fastPeriod || 12 }}, {{ selectedSymbolMetrics.macd?.slowPeriod || 26 }}, {{ selectedSymbolMetrics.macd?.signalPeriod || 9 }})</mat-card-title>
+                  </mat-card-header>
+                  <mat-card-content>
+                    <div class="indicator-value-large" [class]="getBiasClass(selectedSymbolMetrics.macd?.signal || 'NEUTRAL')">
+                      {{ selectedSymbolMetrics.macd?.signal || 'N/A' }}
+                    </div>
+                    <div class="indicator-details">
+                      <div class="detail-row">
+                        <span class="detail-label">MACD Line:</span>
+                        <span class="detail-value">{{ selectedSymbolMetrics.macd?.macdLine | number:'1.2-2' }}</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">Signal Line:</span>
+                        <span class="detail-value">{{ selectedSymbolMetrics.macd?.signalLine | number:'1.2-2' }}</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">Histogram:</span>
+                        <span class="detail-value" [class.positive]="(selectedSymbolMetrics.macd?.histogram || 0) > 0" [class.negative]="(selectedSymbolMetrics.macd?.histogram || 0) < 0">
+                          {{ selectedSymbolMetrics.macd?.histogram | number:'1.2-2' }}
+                        </span>
+                      </div>
+                      <div class="detail-row" *ngIf="selectedSymbolMetrics.macd?.crossover">
+                        <span class="crossover-badge" [class]="selectedSymbolMetrics.macd?.crossoverType === 'BULLISH_CROSSOVER' ? 'bullish' : 'bearish'">
+                          ⚡ {{ selectedSymbolMetrics.macd?.crossoverType?.replace('_', ' ') }}
+                        </span>
+                      </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+
+                <!-- VWAP Card -->
+                <mat-card class="indicator-card vwap-card">
+                  <mat-card-header>
+                    <mat-icon mat-card-avatar class="vwap-icon">equalizer</mat-icon>
+                    <mat-card-title>VWAP (Volume Weighted Avg Price)</mat-card-title>
+                  </mat-card-header>
+                  <mat-card-content>
+                    <div class="indicator-value-large" [ngClass]="(selectedSymbolMetrics.vwap?.position || '') === 'ABOVE' ? 'bias-bearish' : (selectedSymbolMetrics.vwap?.position || '') === 'BELOW' ? 'bias-bullish' : 'bias-neutral'">
+                      {{ selectedSymbolMetrics.vwap?.position || 'N/A' }}
+                    </div>
+                    <div class="indicator-details">
+                      <div class="detail-row">
+                        <span class="detail-label">VWAP:</span>
+                        <span class="detail-value">{{ selectedSymbolMetrics.vwap?.value | number:'1.2-2' }}</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">Price to VWAP:</span>
+                        <span class="detail-value" [class.positive]="(selectedSymbolMetrics.vwap?.priceToVwapPercent || 0) > 0" [class.negative]="(selectedSymbolMetrics.vwap?.priceToVwapPercent || 0) < 0">
+                          {{ selectedSymbolMetrics.vwap?.priceToVwapPercent | number:'1.2-2' }}%
+                        </span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">Trading Zone:</span>
+                        <span class="trading-zone-badge" [ngClass]="(selectedSymbolMetrics.vwap?.tradingZone || '') === 'PREMIUM' ? 'premium' : (selectedSymbolMetrics.vwap?.tradingZone || '') === 'DISCOUNT' ? 'discount' : 'fair-value'">
+                          {{ selectedSymbolMetrics.vwap?.tradingZone || 'N/A' }}
+                        </span>
+                      </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+
+                <!-- Overall Signal Card -->
+                <mat-card class="indicator-card signal-card">
+                  <mat-card-header>
+                    <mat-icon mat-card-avatar class="signal-icon-header">verified</mat-icon>
+                    <mat-card-title>Triple Confirmation</mat-card-title>
+                  </mat-card-header>
+                  <mat-card-content>
+                    <div class="signal-display" [class]="getSignalClass(selectedSymbolMetrics.overallSignal)">
+                      <mat-icon>{{ selectedSymbolMetrics.overallSignal === 'BUY' ? 'arrow_upward' : selectedSymbolMetrics.overallSignal === 'SELL' ? 'arrow_downward' : 'remove' }}</mat-icon>
+                      <span>{{ selectedSymbolMetrics.overallSignal || 'NO_SIGNAL' }}</span>
+                    </div>
+                    <div class="confidence-display">
+                      <span class="confidence-label">Confidence:</span>
+                      <div class="confidence-bar-container">
+                        <div class="confidence-bar" [style.width.%]="selectedSymbolMetrics.confidenceScore || 0"
+                             [ngClass]="selectedSymbolMetrics.confidenceScore >= 70 ? 'high' : selectedSymbolMetrics.confidenceScore >= 50 ? 'medium' : 'low'">
+                        </div>
+                      </div>
+                      <span class="confidence-percent">{{ selectedSymbolMetrics.confidenceScore | number:'1.0-0' }}%</span>
+                    </div>
+                    <div class="recommendation-text" *ngIf="selectedSymbolMetrics.recommendation">
+                      {{ selectedSymbolMetrics.recommendation }}
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+              </div>
+
+              <!-- Indicator Charts -->
+              <div class="indicator-charts-section">
+                <h5 class="charts-section-title">
+                  <mat-icon>insert_chart</mat-icon>
+                  Indicator Charts - {{ selectedMetricsSymbol }}
+                  <span class="chart-timezone-label">(All times in IST)</span>
+                  <span class="live-badge" *ngIf="isMarketOpen">
+                    <span class="live-pulse"></span> LIVE
+                  </span>
+                  <span class="last-update-label" *ngIf="lastRefreshTime">Updated: {{ lastRefreshTime }}</span>
+                </h5>
+
+                <!-- Chart Reading Guide -->
+                <mat-expansion-panel class="chart-guide-panel">
+                  <mat-expansion-panel-header>
+                    <mat-panel-title>
+                      <mat-icon>help_outline</mat-icon>
+                      How to Read These Charts
+                    </mat-panel-title>
+                  </mat-expansion-panel-header>
+                  <div class="chart-guide-content">
+                    <div class="guide-section">
+                      <h6>📈 Price &amp; Supertrend Chart</h6>
+                      <ul>
+                        <li><strong>Green candles</strong> = Price closed higher than open (bullish). <strong>Red candles</strong> = Price closed lower (bearish).</li>
+                        <li><strong>Supertrend line (green/red)</strong> acts as dynamic support/resistance. When the line is <strong style="color:#00ff88">green</strong> (below price) → uptrend; <strong style="color:#ff4444">red</strong> (above price) → downtrend.</li>
+                        <li><strong>Buy signal</strong>: When Supertrend flips from red to green (trend change). <strong>Sell signal</strong>: Green to red.</li>
+                        <li>The farther price is from the Supertrend line, the stronger the trend. Price touching the line may indicate a reversal or retest.</li>
+                      </ul>
+                    </div>
+                    <div class="guide-section">
+                      <h6>📊 MACD Chart (12, 26, 9)</h6>
+                      <ul>
+                        <li><strong>MACD Line (cyan)</strong> = Difference between 12-period and 26-period EMA. <strong>Signal Line (orange)</strong> = 9-period EMA of MACD.</li>
+                        <li><strong>Histogram bars</strong>: Green bars = MACD above Signal (bullish momentum); Red bars = MACD below Signal (bearish momentum).</li>
+                        <li><strong>Bullish crossover</strong>: MACD crosses above Signal line → potential buy. <strong>Bearish crossover</strong>: MACD crosses below → potential sell.</li>
+                        <li>Growing histogram = increasing momentum. Shrinking histogram = momentum fading (possible reversal ahead).</li>
+                        <li>Watch for <strong>divergence</strong>: Price making new highs but MACD making lower highs → bearish divergence (weakness).</li>
+                      </ul>
+                    </div>
+                    <div class="guide-section">
+                      <h6>💜 VWAP Chart</h6>
+                      <ul>
+                        <li><strong>VWAP (purple line)</strong> = Volume Weighted Average Price — the "fair value" for the day.</li>
+                        <li><strong>Price above VWAP</strong> = Buyers in control (bullish bias). <strong>Price below VWAP</strong> = Sellers in control (bearish bias).</li>
+                        <li><strong>Dashed bands</strong> = ±1% standard deviation bands. Price outside bands may be overextended.</li>
+                        <li>VWAP acts as a <strong>magnet</strong> — price tends to revert toward it. Use it as a dynamic support/resistance level.</li>
+                        <li>Best used for <strong>intraday trading only</strong> — VWAP resets each session.</li>
+                      </ul>
+                    </div>
+                    <div class="guide-section">
+                      <h6>🎯 Triple Confirmation Strategy</h6>
+                      <ul>
+                        <li><strong>Strong BUY</strong>: Supertrend = Green (Bullish) + MACD = Bullish Crossover + Price above VWAP.</li>
+                        <li><strong>Strong SELL</strong>: Supertrend = Red (Bearish) + MACD = Bearish Crossover + Price below VWAP.</li>
+                        <li>2 out of 3 indicators agreeing = moderate confidence. All 3 = high confidence (&gt;70%).</li>
+                        <li><strong>Timeframe</strong>: Charts show 5-minute candles for the last 50 bars (~4 hours of market data).</li>
+                      </ul>
+                    </div>
+                  </div>
+                </mat-expansion-panel>
+
+                <div class="indicator-charts-grid">
+                  <!-- Price & Supertrend Chart -->
+                  <mat-card class="indicator-chart-card">
+                    <mat-card-content>
+                      <h6 class="chart-title" style="color: #ff9800; margin: 0 0 8px 0; font-size: 0.85rem;">Price & Supertrend (20, 2)</h6>
+                      <div #priceSupertrendChartContainer class="chart-wrapper"></div>
+                    </mat-card-content>
+                  </mat-card>
+
+                  <!-- MACD Chart -->
+                  <mat-card class="indicator-chart-card">
+                    <mat-card-content>
+                      <h6 class="chart-title" style="color: #00d4ff; margin: 0 0 8px 0; font-size: 0.85rem;">MACD (12, 26, 9)</h6>
+                      <div #macdChartContainer class="chart-wrapper"></div>
+                    </mat-card-content>
+                  </mat-card>
+
+                  <!-- VWAP Chart -->
+                  <mat-card class="indicator-chart-card full-width">
+                    <mat-card-content>
+                      <h6 class="chart-title" style="color: #9c27b0; margin: 0 0 8px 0; font-size: 0.85rem;">Volume Weighted Average Price (VWAP)</h6>
+                      <div #vwapChartContainer class="chart-wrapper"></div>
+                    </mat-card-content>
+                  </mat-card>
+                </div>
+              </div>
+
+              <!-- Interactive Signal Chart with Annotations -->
+              <div class="signal-chart-section">
+                <h5 class="charts-section-title">
+                  <mat-icon>show_chart</mat-icon>
+                  Interactive Signal Chart - {{ selectedMetricsSymbol }}
+                  <span class="chart-subtitle">(Entry/Exit Points, Stop Loss &amp; Targets — IST)</span>
+                </h5>
+
+                <div class="signal-chart-controls">
+                  <mat-slide-toggle
+                    [(ngModel)]="showSignalAnnotations"
+                    (change)="toggleSignalAnnotations()"
+                    color="primary">
+                    Show Signals
+                  </mat-slide-toggle>
+                  <mat-slide-toggle
+                    [(ngModel)]="showTradeLevels"
+                    (change)="toggleTradeLevels()"
+                    color="accent">
+                    Show Trade Levels
+                  </mat-slide-toggle>
+                  <button mat-icon-button (click)="updateSignalChart()" matTooltip="Refresh Chart">
+                    <mat-icon>refresh</mat-icon>
+                  </button>
+                </div>
+
+                <!-- Signal Chart Legend -->
+                <div class="signal-chart-legend">
+                  <div class="legend-item">
+                    <span class="legend-marker buy-marker">▲</span>
+                    <span>BUY Signal</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-marker sell-marker">▼</span>
+                    <span>SELL Signal</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-line entry-line"></span>
+                    <span>Entry Price</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-line sl-line"></span>
+                    <span>Stop Loss</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-line target-line"></span>
+                    <span>Target Levels</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-line supertrend-line"></span>
+                    <span>Supertrend</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-line vwap-line"></span>
+                    <span>VWAP</span>
+                  </div>
+                </div>
+
+                <!-- Signal Chart Reading Guide -->
+                <mat-expansion-panel class="chart-guide-panel">
+                  <mat-expansion-panel-header>
+                    <mat-panel-title>
+                      <mat-icon>help_outline</mat-icon>
+                      How to Read the Signal Chart
+                    </mat-panel-title>
+                  </mat-expansion-panel-header>
+                  <div class="chart-guide-content">
+                    <div class="guide-section">
+                      <h6>🕯️ Reading Candlesticks</h6>
+                      <ul>
+                        <li>Each candle represents a <strong>5-minute interval</strong> of price action. The X-axis shows IST market hours (9:15 AM – 3:30 PM).</li>
+                        <li><strong>Green candle</strong>: Open at bottom, Close at top (price went up). <strong>Red candle</strong>: Open at top, Close at bottom (price fell).</li>
+                        <li>Thin lines (wicks) show the <strong>high/low range</strong> during that interval.</li>
+                        <li>Tall candles with small wicks = strong conviction. Small body with long wicks = indecision.</li>
+                      </ul>
+                    </div>
+                    <div class="guide-section">
+                      <h6>🎯 Trade Level Annotations</h6>
+                      <ul>
+                        <li><strong style="color:#26a69a">▲ BUY markers</strong> appear when all 3 indicators align bullish. <strong style="color:#ef5350">▼ SELL markers</strong> for bearish alignment.</li>
+                        <li><strong style="color:#2196f3">Entry Price (blue line)</strong>: The recommended entry level for the trade.</li>
+                        <li><strong style="color:#f44336">Stop Loss (red line)</strong>: Exit if price crosses this level — limits your loss.</li>
+                        <li><strong style="color:#4caf50">Target Levels (green lines)</strong>: Profit-taking levels (Target 1 = conservative, Target 2 = extended).</li>
+                        <li>Use toggles above to show/hide signals and trade levels for a cleaner view.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </mat-expansion-panel>
+
+                <mat-card class="signal-chart-card">
+                  <mat-card-content>
+                    <div #signalChartContainer class="signal-chart-container"></div>
+                  </mat-card-content>
+                </mat-card>
+
+                <!-- Active Signal Info Panel -->
+                <div class="active-signal-panel" *ngIf="activeSignals.length > 0">
+                  <h6>
+                    <mat-icon>notifications_active</mat-icon>
+                    Active Signal for {{ selectedMetricsSymbol }}
+                  </h6>
+                  <div class="signal-info-grid" *ngIf="activeSignals[0] as signal">
+                    <div class="signal-info-item">
+                      <span class="info-label">Type:</span>
+                      <span class="info-value" [class]="getSignalClass(signal.signalType)">
+                        {{ signal.signalType }}
+                      </span>
+                    </div>
+                    <div class="signal-info-item">
+                      <span class="info-label">Entry:</span>
+                      <span class="info-value entry-price">{{ signal.entryPrice | number:'1.2-2' }}</span>
+                    </div>
+                    <div class="signal-info-item">
+                      <span class="info-label">Stop Loss:</span>
+                      <span class="info-value sl-price">{{ signal.stopLoss | number:'1.2-2' }}</span>
+                    </div>
+                    <div class="signal-info-item">
+                      <span class="info-label">Target 1:</span>
+                      <span class="info-value target-price">{{ signal.target1 | number:'1.2-2' }}</span>
+                    </div>
+                    <div class="signal-info-item">
+                      <span class="info-label">Target 2:</span>
+                      <span class="info-value target-price">{{ signal.target2 | number:'1.2-2' }}</span>
+                    </div>
+                    <div class="signal-info-item">
+                      <span class="info-label">R:R Ratio:</span>
+                      <span class="info-value">{{ signal.riskRewardRatio | number:'1.2-2' }}</span>
+                    </div>
+                    <div class="signal-info-item">
+                      <span class="info-label">Confidence:</span>
+                      <span class="info-value confidence-value">{{ signal.confidenceScore | number:'1.0-0' }}%</span>
+                    </div>
+                    <div class="signal-info-item">
+                      <span class="info-label">Signal Time:</span>
+                      <span class="info-value">{{ signal.signalTime | date:'shortTime' }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="!isLoadingMetrics && !selectedSymbolMetrics" class="no-data">
+              <mat-icon>info</mat-icon>
+              <p>No indicator data available. Click Refresh to load.</p>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Option Chain Integration Section -->
+        <mat-card class="option-chain-card">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>show_chart</mat-icon>
+              Option Chain Insights
+            </mat-card-title>
+            <div class="symbol-selector">
+              <mat-chip-set>
+                <mat-chip *ngFor="let symbol of symbols"
+                          [attr.highlighted]="selectedMetricsSymbol === symbol ? 'true' : null"
+                          (click)="selectMetricsSymbol(symbol)">
+                  {{ symbol }}
+                </mat-chip>
+              </mat-chip-set>
+            </div>
+          </mat-card-header>
+          <mat-card-content>
+            <mat-spinner *ngIf="isLoadingOptionChain" diameter="40" class="loading-spinner"></mat-spinner>
+
+            <div class="option-chain-content" *ngIf="!isLoadingOptionChain && selectedOptionChainMetrics">
+              <div class="option-chain-grid">
+                <!-- Max Pain Card -->
+                <mat-card class="option-chain-inner-card max-pain-card">
+                  <mat-card-header>
+                    <mat-icon mat-card-avatar class="max-pain-icon">gps_fixed</mat-icon>
+                    <mat-card-title>Max Pain Analysis</mat-card-title>
+                  </mat-card-header>
+                  <mat-card-content>
+                    <div class="metric-value-large">
+                      {{ selectedOptionChainMetrics.maxPain?.maxPainStrike | number:'1.0-0' }}
+                    </div>
+                    <div class="metric-label">Max Pain Strike</div>
+                    <div class="metric-details">
+                      <div class="detail-row">
+                        <span class="detail-label">Price Relation:</span>
+                        <span class="detail-value" [ngClass]="selectedOptionChainMetrics.maxPain?.priceRelation === 'BELOW_MAX_PAIN' ? 'bullish-text' : selectedOptionChainMetrics.maxPain?.priceRelation === 'ABOVE_MAX_PAIN' ? 'bearish-text' : ''">
+                          {{ selectedOptionChainMetrics.maxPain?.priceRelation || 'N/A' }}
+                        </span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">Distance:</span>
+                        <span class="detail-value">{{ selectedOptionChainMetrics.maxPain?.distanceFromSpot | number:'1.0-0' }} pts ({{ selectedOptionChainMetrics.maxPain?.distanceFromSpotPercent | number:'1.2-2' }}%)</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">Pull Strength:</span>
+                        <div class="pull-strength-bar-container">
+                          <div class="pull-strength-bar" [style.width.%]="selectedOptionChainMetrics.maxPain?.pullStrength || 0"></div>
+                        </div>
+                        <span class="pull-strength-value">{{ selectedOptionChainMetrics.maxPain?.pullStrength | number:'1.0-0' }}%</span>
+                      </div>
+                      <div class="detail-row" *ngIf="selectedOptionChainMetrics.maxPain?.confirmsBullish">
+                        <span class="signal-badge bullish">🔼 Bullish Pull</span>
+                      </div>
+                      <div class="detail-row" *ngIf="selectedOptionChainMetrics.maxPain?.confirmsBearish">
+                        <span class="signal-badge bearish">🔽 Bearish Pull</span>
+                      </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+
+                <!-- OI Analysis Card -->
+                <mat-card class="option-chain-inner-card oi-analysis-card">
+                  <mat-card-header>
+                    <mat-icon mat-card-avatar class="oi-icon">bar_chart</mat-icon>
+                    <mat-card-title>OI Analysis</mat-card-title>
+                  </mat-card-header>
+                  <mat-card-content>
+                    <div class="metric-value-large" [ngClass]="selectedOptionChainMetrics.oiAnalysis?.pcrSignal === 'BULLISH' ? 'bullish-text' : selectedOptionChainMetrics.oiAnalysis?.pcrSignal === 'BEARISH' ? 'bearish-text' : ''">
+                      {{ selectedOptionChainMetrics.oiAnalysis?.pcr | number:'1.2-2' }}
+                    </div>
+                    <div class="metric-label">PCR ({{ selectedOptionChainMetrics.oiAnalysis?.pcrSignal }})</div>
+                    <div class="metric-details">
+                      <div class="detail-row">
+                        <span class="detail-label">OI Build-up:</span>
+                        <span class="build-up-badge" [ngClass]="selectedOptionChainMetrics.oiAnalysis?.oiBuildUpType?.includes('LONG') ? 'bullish' : selectedOptionChainMetrics.oiAnalysis?.oiBuildUpType?.includes('SHORT') ? 'bearish' : ''">
+                          {{ selectedOptionChainMetrics.oiAnalysis?.oiBuildUpType?.replace('_', ' ') || 'N/A' }}
+                        </span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">Highest Call OI:</span>
+                        <span class="detail-value">{{ selectedOptionChainMetrics.oiAnalysis?.highestCallOIStrike | number:'1.0-0' }}</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">Highest Put OI:</span>
+                        <span class="detail-value">{{ selectedOptionChainMetrics.oiAnalysis?.highestPutOIStrike | number:'1.0-0' }}</span>
+                      </div>
+                      <div class="detail-row" *ngIf="selectedOptionChainMetrics.oiAnalysis?.confirmsUptrend">
+                        <span class="signal-badge bullish">✓ Confirms Uptrend</span>
+                      </div>
+                      <div class="detail-row" *ngIf="selectedOptionChainMetrics.oiAnalysis?.confirmsDowntrend">
+                        <span class="signal-badge bearish">✓ Confirms Downtrend</span>
+                      </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+
+
+                <!-- Option Chain Combined Signal Card -->
+                <mat-card class="option-chain-inner-card oc-signal-card">
+                  <mat-card-header>
+                    <mat-icon mat-card-avatar class="oc-signal-icon">verified</mat-icon>
+                    <mat-card-title>Option Chain Signal</mat-card-title>
+                  </mat-card-header>
+                  <mat-card-content>
+                    <div class="signal-display large" [class]="getSignalClass(selectedOptionChainMetrics.optionChainSignal)">
+                      <mat-icon>{{ selectedOptionChainMetrics.optionChainSignal === 'BUY' ? 'arrow_upward' : selectedOptionChainMetrics.optionChainSignal === 'SELL' ? 'arrow_downward' : 'remove' }}</mat-icon>
+                      <span>{{ selectedOptionChainMetrics.optionChainSignal || 'NEUTRAL' }}</span>
+                    </div>
+                    <div class="oc-bias-display" [ngClass]="selectedOptionChainMetrics.optionChainBias === 'BULLISH' ? 'bullish' : selectedOptionChainMetrics.optionChainBias === 'BEARISH' ? 'bearish' : 'neutral'">
+                      Bias: {{ selectedOptionChainMetrics.optionChainBias || 'NEUTRAL' }}
+                    </div>
+                    <div class="confidence-display">
+                      <span class="confidence-label">Confidence:</span>
+                      <div class="confidence-bar-container">
+                        <div class="confidence-bar" [style.width.%]="selectedOptionChainMetrics.optionChainConfidence || 0"
+                             [ngClass]="selectedOptionChainMetrics.optionChainConfidence >= 70 ? 'high' : selectedOptionChainMetrics.optionChainConfidence >= 50 ? 'medium' : 'low'">
+                        </div>
+                      </div>
+                      <span class="confidence-percent">{{ selectedOptionChainMetrics.optionChainConfidence | number:'1.0-0' }}%</span>
+                    </div>
+                    <div class="recommendation-text" *ngIf="selectedOptionChainMetrics.recommendedAction">
+                      {{ selectedOptionChainMetrics.recommendedAction }}
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+              </div>
+            </div>
+
+            <div *ngIf="!isLoadingOptionChain && !selectedOptionChainMetrics" class="no-data">
+              <mat-icon>info</mat-icon>
+              <p>No option chain data available. Click Refresh to load.</p>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Live Scan Results -->
+        <mat-card class="live-scan-card" *ngIf="liveScans.length > 0">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>radar</mat-icon>
+              Live Scan Results
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="scan-results-grid">
+              <div *ngFor="let scan of liveScans" class="scan-result-item" [class.has-signal]="scan.signalType !== 'NO_SIGNAL'">
+                <div class="scan-symbol">{{ scan.symbol }}</div>
+                <div class="scan-price">{{ scan.currentPrice | number:'1.2-2' }}</div>
+                <span class="signal-type-badge" [class]="getSignalClass(scan.signalType)">{{ scan.signalType }}</span>
+                <div class="scan-indicators">
+                  <span class="indicator-badge" [class]="getBiasClass(scan.supertrendStatus)">ST: {{ scan.supertrendStatus }}</span>
+                  <span class="indicator-badge" [class]="getBiasClass(scan.macdStatus)">MACD: {{ scan.macdStatus }}</span>
+                  <span class="indicator-badge">VWAP: {{ scan.vwapStatus }}</span>
+                </div>
+                <div class="scan-confidence" *ngIf="scan.confidenceScore">
+                  <span class="confidence-label">Confidence:</span>
+                  <span class="confidence-value">{{ scan.confidenceScore | number:'1.1-1' }}%</span>
+                </div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Symbol Summaries Table -->
+        <mat-card class="symbol-summaries-card" *ngIf="dashboardSummary?.symbolSummaries?.length">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>table_chart</mat-icon>
+              Symbol Performance
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="table-container">
+              <table mat-table [dataSource]="dashboardSummary!.symbolSummaries" class="brahmastra-table">
+                <ng-container matColumnDef="symbol">
+                  <th mat-header-cell *matHeaderCellDef>Symbol</th>
+                  <td mat-cell *matCellDef="let row">{{ row.symbol }}</td>
+                </ng-container>
+                <ng-container matColumnDef="totalTrades">
+                  <th mat-header-cell *matHeaderCellDef>Trades</th>
+                  <td mat-cell *matCellDef="let row">{{ row.totalTrades }}</td>
+                </ng-container>
+                <ng-container matColumnDef="winRate">
+                  <th mat-header-cell *matHeaderCellDef>Win Rate</th>
+                  <td mat-cell *matCellDef="let row">
+                    <span class="confidence-badge" [ngClass]="row.winRate >= 60 ? 'confidence-high' : row.winRate >= 40 ? 'confidence-medium' : 'confidence-low'">
+                      {{ row.winRate | number:'1.1-1' }}%
+                    </span>
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="totalPnL">
+                  <th mat-header-cell *matHeaderCellDef>Total P&amp;L</th>
+                  <td mat-cell *matCellDef="let row">
+                    <span class="pnl-value" [class.pnl-positive]="row.totalPnL > 0" [class.pnl-negative]="row.totalPnL < 0">
+                      {{ formatCurrency(row.totalPnL) }}
+                    </span>
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="currentTrend">
+                  <th mat-header-cell *matHeaderCellDef>Trend</th>
+                  <td mat-cell *matCellDef="let row">
+                    <span class="direction-badge" [ngClass]="row.currentTrend === 'BULLISH' ? 'direction-long' : row.currentTrend === 'BEARISH' ? 'direction-short' : 'direction-neutral'">
+                      {{ row.currentTrend }}
+                    </span>
+                  </td>
+                </ng-container>
+                <tr mat-header-row *matHeaderRowDef="['symbol', 'totalTrades', 'winRate', 'totalPnL', 'currentTrend']"></tr>
+                <tr mat-row *matRowDef="let row; columns: ['symbol', 'totalTrades', 'winRate', 'totalPnL', 'currentTrend'];"></tr>
+              </table>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Signal Generator Tab -->
+    <mat-tab label="Signal Generator">
+      <div class="tab-content">
+        <mat-card class="config-card">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>tune</mat-icon>
+              Signal Generation Parameters
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="config-form">
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>Symbol</mat-label>
+                  <mat-select [(ngModel)]="signalRequest.symbol">
+                    <mat-option *ngFor="let symbol of symbols" [value]="symbol">{{ symbol }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Timeframe</mat-label>
+                  <mat-select [(ngModel)]="signalRequest.timeframe">
+                    <mat-option *ngFor="let tf of timeframes" [value]="tf">{{ tf }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>From Date</mat-label>
+                  <input matInput [matDatepicker]="fromPicker" [(ngModel)]="signalRequest.fromDate">
+                  <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
+                  <mat-datepicker #fromPicker></mat-datepicker>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>To Date</mat-label>
+                  <input matInput [matDatepicker]="toPicker" [(ngModel)]="signalRequest.toDate">
+                  <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
+                  <mat-datepicker #toPicker></mat-datepicker>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row toggle-row">
+                <mat-slide-toggle [(ngModel)]="signalRequest.usePCR" color="primary">
+                  Use PCR Filter
+                </mat-slide-toggle>
+              </div>
+
+              <mat-expansion-panel class="advanced-panel">
+                <mat-expansion-panel-header>
+                  <mat-panel-title>
+                    <mat-icon>settings</mat-icon>
+                    Advanced Parameters
+                  </mat-panel-title>
+                </mat-expansion-panel-header>
+                <div class="advanced-params">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Supertrend Period</mat-label>
+                    <input matInput type="number" [(ngModel)]="signalRequest.supertrendPeriod">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Supertrend Multiplier</mat-label>
+                    <input matInput type="number" step="0.1" [(ngModel)]="signalRequest.supertrendMultiplier">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>MACD Fast</mat-label>
+                    <input matInput type="number" [(ngModel)]="signalRequest.macdFastPeriod">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>MACD Slow</mat-label>
+                    <input matInput type="number" [(ngModel)]="signalRequest.macdSlowPeriod">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>MACD Signal</mat-label>
+                    <input matInput type="number" [(ngModel)]="signalRequest.macdSignalPeriod">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>VWAP Tolerance</mat-label>
+                    <input matInput type="number" step="0.001" [(ngModel)]="signalRequest.vwapTolerance">
+                  </mat-form-field>
+                </div>
+              </mat-expansion-panel>
+
+              <div class="action-row">
+                <button mat-raised-button color="primary" (click)="generateSignals()" [disabled]="isLoadingSignals" class="generate-btn">
+                  <mat-icon>play_arrow</mat-icon> Generate Signals
+                  <mat-spinner *ngIf="isLoadingSignals" diameter="20"></mat-spinner>
+                </button>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Generated Signals Table -->
+        <mat-card class="signals-card" *ngIf="generatedSignals.length > 0">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>signal_cellular_alt</mat-icon>
+              Generated Signals
+              <span class="signal-count">({{ generatedSignals.length }})</span>
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="table-container">
+              <table mat-table [dataSource]="generatedSignals" class="brahmastra-table signals-table">
+                <ng-container matColumnDef="signalTime">
+                  <th mat-header-cell *matHeaderCellDef>Time</th>
+                  <td mat-cell *matCellDef="let row">{{ formatTime(row.signalTime) }}</td>
+                </ng-container>
+                <ng-container matColumnDef="signalType">
+                  <th mat-header-cell *matHeaderCellDef>Type</th>
+                  <td mat-cell *matCellDef="let row">
+                    <span class="signal-type-badge" [class]="getSignalClass(row.signalType)">
+                      <mat-icon>{{ row.signalType === 'BUY' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+                      {{ row.signalType }}
+                    </span>
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="entryPrice">
+                  <th mat-header-cell *matHeaderCellDef>Entry</th>
+                  <td mat-cell *matCellDef="let row" class="price-cell">{{ row.entryPrice | number:'1.2-2' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="stopLoss">
+                <th mat-header-cell *matHeaderCellDef>Stop Loss</th>
+                <td mat-cell *matCellDef="let row" class="stop-loss">{{ row.stopLoss | number:'1.2-2' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="target1">
+                <th mat-header-cell *matHeaderCellDef>Target 1</th>
+                <td mat-cell *matCellDef="let row" class="target">{{ row.target1 | number:'1.2-2' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="target2">
+                <th mat-header-cell *matHeaderCellDef>Target 2</th>
+                <td mat-cell *matCellDef="let row" class="target">{{ row.target2 | number:'1.2-2' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="riskRewardRatio">
+                <th mat-header-cell *matHeaderCellDef>R:R</th>
+                <td mat-cell *matCellDef="let row"><strong>{{ row.riskRewardRatio | number:'1.2-2' }}</strong></td>
+              </ng-container>
+              <ng-container matColumnDef="confidenceScore">
+                <th mat-header-cell *matHeaderCellDef>Confidence</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="confidence-badge" [ngClass]="row.confidenceScore >= 70 ? 'confidence-high' : row.confidenceScore >= 50 ? 'confidence-medium' : 'confidence-low'">
+                    {{ row.confidenceScore | number:'1.1-1' }}%
+                  </span>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="status-badge" [ngClass]="getSignalStatusClass(row.status)">{{ row.status }}</span>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="signalColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: signalColumns;"></tr>
+            </table>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Backtester Tab -->
+    <mat-tab label="Backtester">
+      <div class="tab-content">
+        <mat-card class="config-card">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>science</mat-icon>
+              Backtest Configuration
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="config-form">
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>Symbol</mat-label>
+                  <mat-select [(ngModel)]="backtestRequest.symbol">
+                    <mat-option *ngFor="let symbol of symbols" [value]="symbol">{{ symbol }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Timeframe</mat-label>
+                  <mat-select [(ngModel)]="backtestRequest.timeframe">
+                    <mat-option *ngFor="let tf of timeframes" [value]="tf">{{ tf }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>From Date</mat-label>
+                  <input matInput [matDatepicker]="btFromPicker" [(ngModel)]="backtestRequest.fromDate">
+                  <mat-datepicker-toggle matSuffix [for]="btFromPicker"></mat-datepicker-toggle>
+                  <mat-datepicker #btFromPicker></mat-datepicker>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>To Date</mat-label>
+                  <input matInput [matDatepicker]="btToPicker" [(ngModel)]="backtestRequest.toDate">
+                  <mat-datepicker-toggle matSuffix [for]="btToPicker"></mat-datepicker-toggle>
+                  <mat-datepicker #btToPicker></mat-datepicker>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>Initial Capital (₹)</mat-label>
+                  <input matInput type="number" [(ngModel)]="backtestRequest.initialCapital">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Risk per Trade (%)</mat-label>
+                  <input matInput type="number" step="0.5" [(ngModel)]="backtestRequest.riskPerTrade">
+                </mat-form-field>
+
+                <mat-slide-toggle [(ngModel)]="backtestRequest.usePCR" color="primary">
+                  Use PCR Filter
+                </mat-slide-toggle>
+              </div>
+
+              <div class="action-row">
+                <button mat-raised-button color="primary" (click)="runBacktest()" [disabled]="isLoadingBacktest" class="generate-btn">
+                  <mat-icon>science</mat-icon> Run Backtest
+                  <mat-spinner *ngIf="isLoadingBacktest" diameter="20"></mat-spinner>
+                </button>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Backtest Results -->
+        <div *ngIf="backtestResult" class="backtest-results">
+          <!-- Metrics Cards -->
+          <div class="metrics-grid">
+            <mat-card class="metric-card pnl-card">
+              <div class="metric-icon">
+                <mat-icon>account_balance_wallet</mat-icon>
+              </div>
+              <div class="metric-content">
+                <div class="metric-title">Net P&amp;L</div>
+                <div class="metric-value" [class.positive]="backtestResult.netPnL > 0" [class.negative]="backtestResult.netPnL < 0">
+                  {{ formatCurrency(backtestResult.netPnL) }}
+                </div>
+                <div class="metric-subtitle">{{ formatPercent(backtestResult.netPnLPercent) }}</div>
+              </div>
+            </mat-card>
+
+            <mat-card class="metric-card winrate-card">
+              <div class="metric-icon">
+                <mat-icon>emoji_events</mat-icon>
+              </div>
+              <div class="metric-content">
+                <div class="metric-title">Win Rate</div>
+                <div class="metric-value">{{ backtestResult.winRate | number:'1.1-1' }}%</div>
+                <div class="metric-subtitle">{{ backtestResult.winningTrades }}/{{ backtestResult.totalTrades }} trades</div>
+              </div>
+            </mat-card>
+
+            <mat-card class="metric-card profit-card">
+              <div class="metric-icon">
+                <mat-icon>speed</mat-icon>
+              </div>
+              <div class="metric-content">
+                <div class="metric-title">Profit Factor</div>
+                <div class="metric-value">{{ backtestResult.profitFactor | number:'1.2-2' }}</div>
+                <div class="metric-subtitle">Avg Win: {{ formatCurrency(backtestResult.averageWin) }}</div>
+              </div>
+            </mat-card>
+
+            <mat-card class="metric-card drawdown-card">
+              <div class="metric-icon">
+                <mat-icon>trending_down</mat-icon>
+              </div>
+              <div class="metric-content">
+                <div class="metric-title">Max Drawdown</div>
+                <div class="metric-value negative">{{ backtestResult.maxDrawdownPercent | number:'1.2-2' }}%</div>
+                <div class="metric-subtitle">{{ formatCurrency(backtestResult.maxDrawdown) }}</div>
+              </div>
+            </mat-card>
+
+            <mat-card class="metric-card sharpe-card">
+              <div class="metric-icon">
+                <mat-icon>analytics</mat-icon>
+              </div>
+              <div class="metric-content">
+                <div class="metric-title">Sharpe Ratio</div>
+                <div class="metric-value">{{ backtestResult.sharpeRatio | number:'1.2-2' }}</div>
+                <div class="metric-subtitle">Risk-adjusted return</div>
+              </div>
+            </mat-card>
+
+            <mat-card class="metric-card expectancy-card">
+              <div class="metric-icon">
+                <mat-icon>calculate</mat-icon>
+              </div>
+              <div class="metric-content">
+                <div class="metric-title">Expectancy</div>
+                <div class="metric-value" [class.positive]="backtestResult.expectancy > 0" [class.negative]="backtestResult.expectancy < 0">
+                  {{ formatCurrency(backtestResult.expectancy) }}
+                </div>
+                <div class="metric-subtitle">Per trade</div>
+              </div>
+            </mat-card>
+          </div>
+
+          <!-- Charts -->
+          <div class="charts-container">
+            <mat-card class="chart-card">
+              <mat-card-header>
+                <mat-card-title>
+                  <mat-icon>show_chart</mat-icon>
+                  Equity Curve
+                </mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div #equityChartContainer class="backtest-chart-container"></div>
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card class="chart-card">
+              <mat-card-header>
+                <mat-card-title>
+                  <mat-icon>trending_down</mat-icon>
+                  Drawdown Curve
+                </mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div #drawdownChartContainer class="backtest-chart-container"></div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+
+          <!-- Trade Log -->
+          <mat-card class="trade-log-card" *ngIf="backtestResult.tradeLog?.length">
+            <mat-card-header>
+              <mat-card-title>
+                <mat-icon>history</mat-icon>
+                Trade Log
+              </mat-card-title>
+              <button mat-icon-button (click)="exportBacktestToCSV()" matTooltip="Export to CSV" class="export-btn">
+                <mat-icon>download</mat-icon>
+              </button>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="table-container">
+                <table mat-table [dataSource]="backtestResult.tradeLog" class="brahmastra-table trade-log-table">
+                  <ng-container matColumnDef="tradeNumber">
+                    <th mat-header-cell *matHeaderCellDef>#</th>
+                    <td mat-cell *matCellDef="let row">{{ row.tradeNumber }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="signalType">
+                    <th mat-header-cell *matHeaderCellDef>Type</th>
+                    <td mat-cell *matCellDef="let row">
+                      <span class="signal-type-badge" [class]="getSignalClass(row.signalType)">
+                        <mat-icon>{{ row.signalType === 'BUY' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+                        {{ row.signalType }}
+                      </span>
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="entryTime">
+                    <th mat-header-cell *matHeaderCellDef>Entry Time</th>
+                    <td mat-cell *matCellDef="let row">{{ formatTime(row.entryTime) }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="entryPrice">
+                    <th mat-header-cell *matHeaderCellDef>Entry</th>
+                    <td mat-cell *matCellDef="let row" class="price-cell">{{ row.entryPrice | number:'1.2-2' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="exitPrice">
+                    <th mat-header-cell *matHeaderCellDef>Exit</th>
+                    <td mat-cell *matCellDef="let row" class="price-cell">{{ row.exitPrice | number:'1.2-2' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="pnl">
+                    <th mat-header-cell *matHeaderCellDef>P&amp;L</th>
+                    <td mat-cell *matCellDef="let row">
+                      <span class="pnl-value" [class.pnl-positive]="row.pnl > 0" [class.pnl-negative]="row.pnl < 0">
+                        {{ formatCurrency(row.pnl) }}
+                      </span>
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="pnlPercent">
+                    <th mat-header-cell *matHeaderCellDef>P&amp;L %</th>
+                    <td mat-cell *matCellDef="let row">
+                      <span class="pnl-value" [class.pnl-positive]="row.pnlPercent > 0" [class.pnl-negative]="row.pnlPercent < 0">
+                        {{ formatPercent(row.pnlPercent) }}
+                      </span>
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="exitReason">
+                    <th mat-header-cell *matHeaderCellDef>Exit Reason</th>
+                    <td mat-cell *matCellDef="let row">
+                      <span class="exit-reason-badge">{{ row.exitReason }}</span>
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="riskReward">
+                    <th mat-header-cell *matHeaderCellDef>R:R</th>
+                    <td mat-cell *matCellDef="let row"><strong>{{ row.riskReward | number:'1.2-2' }}</strong></td>
+                  </ng-container>
+                  <tr mat-header-row *matHeaderRowDef="tradeLogColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: tradeLogColumns;" [class.win-row]="row.pnl > 0" [class.loss-row]="row.pnl < 0"></tr>
+                </table>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </div>
+    </mat-tab>
+
+  </mat-tab-group>
+</div>
+

@@ -1,0 +1,356 @@
+<div class="telegram-settings-container">
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading Telegram settings...</p>
+  </div>
+
+  <div *ngIf="!isLoading && settings" class="settings-content">
+
+    <mat-card class="settings-card global-settings">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>telegram</mat-icon>
+        <mat-card-title>Telegram Notifications</mat-card-title>
+        <mat-card-subtitle>Bot: {{ settings.botToken || 'Not configured' }} | Chat ID: {{ settings.defaultChatId || 'Not set' }}</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="global-toggle-row">
+          <mat-slide-toggle [(ngModel)]="settings.enabled" color="primary" class="main-toggle">
+            <strong><label class="telegram-label">Enable Telegram Notifications</label></strong>
+          </mat-slide-toggle>
+
+          <div class="action-buttons">
+            <button mat-stroked-button color="primary" (click)="validateConfiguration()" [disabled]="isValidating">
+              <mat-icon *ngIf="!isValidating">verified</mat-icon>
+              <mat-spinner *ngIf="isValidating" diameter="18"></mat-spinner>
+              Validate Bot
+            </button>
+            <button mat-stroked-button color="accent" (click)="sendTestNotification()" [disabled]="isTesting || !settings.enabled">
+              <mat-icon *ngIf="!isTesting">send</mat-icon>
+              <mat-spinner *ngIf="isTesting" diameter="18"></mat-spinner>
+              Send Test
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="validationResult" class="validation-result" [class.success]="validationResult.valid" [class.error]="!validationResult.valid">
+          <mat-icon>{{ validationResult.valid ? 'check_circle' : 'error' }}</mat-icon>
+          <span *ngIf="validationResult.valid">Bot validated successfully</span>
+          <span *ngIf="!validationResult.valid">{{ validationResult.error }}</span>
+        </div>
+
+        <div *ngIf="testResult" class="test-result" [class.success]="testResult.success" [class.error]="!testResult.success">
+          <mat-icon>{{ testResult.success ? 'check_circle' : 'error' }}</mat-icon>
+          <span>{{ testResult.message }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-accordion multi class="alert-categories">
+
+      <!-- Trade Alerts -->
+      <mat-expansion-panel [expanded]="settings.tradeAlerts.enabled">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon class="category-icon trade">trending_up</mat-icon>
+            <span>Trade Alerts</span>
+            <mat-chip-set class="status-chips">
+              <mat-chip [class.enabled]="settings.tradeAlerts.enabled" [class.disabled]="!settings.tradeAlerts.enabled">
+                {{ settings.tradeAlerts.enabled ? 'ON' : 'OFF' }}
+              </mat-chip>
+              <mat-chip *ngIf="settings.tradeAlerts.enabled" class="count-chip">{{ getEnabledTradeAlertCount() }}/8</mat-chip>
+            </mat-chip-set>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <div class="alert-settings-content">
+          <div class="main-toggle-row">
+            <mat-slide-toggle [(ngModel)]="settings.tradeAlerts.enabled" color="primary" (change)="onTradeAlertsToggle()">
+              <strong>Enable Trade Alerts</strong>
+            </mat-slide-toggle>
+          </div>
+
+          <mat-divider></mat-divider>
+
+          <div class="sub-alerts" [class.disabled]="!settings.tradeAlerts.enabled">
+            <div class="alert-row">
+              <mat-slide-toggle [(ngModel)]="settings.tradeAlerts.iobAlerts" [disabled]="!settings.tradeAlerts.enabled" color="accent">
+                IOB (Internal Order Block) Alerts
+              </mat-slide-toggle>
+              <span class="alert-description">Get notified when IOB signals are detected for NIFTY</span>
+            </div>
+
+            <div class="alert-row">
+              <mat-slide-toggle [(ngModel)]="settings.tradeAlerts.iobMitigationAlerts" [disabled]="!settings.tradeAlerts.enabled" color="accent">
+                IOB Mitigation Alerts
+              </mat-slide-toggle>
+              <span class="alert-description">Get notified when IOB zones are mitigated (price enters the zone)</span>
+            </div>
+
+            <div class="alert-row">
+              <mat-slide-toggle [(ngModel)]="settings.tradeAlerts.tradeSetupAlerts" [disabled]="!settings.tradeAlerts.enabled" color="accent">
+                Trade Setup Alerts
+              </mat-slide-toggle>
+              <span class="alert-description">Get notified when new trade setups are generated</span>
+            </div>
+
+            <div class="alert-row">
+              <mat-slide-toggle [(ngModel)]="settings.tradeAlerts.tradeDecisionAlerts" [disabled]="!settings.tradeAlerts.enabled" color="accent">
+                Trade Decision Alerts (BUY/SELL)
+              </mat-slide-toggle>
+              <span class="alert-description">Get notified when BUY/SELL signals are processed for Nifty current week</span>
+            </div>
+
+            <div class="alert-row">
+              <mat-slide-toggle [(ngModel)]="settings.tradeAlerts.liquidityZoneAlerts" [disabled]="!settings.tradeAlerts.enabled" color="accent">
+                Liquidity Zone Alerts
+              </mat-slide-toggle>
+              <span class="alert-description">Get notified when price enters liquidity zones</span>
+            </div>
+
+            <div class="alert-row">
+              <mat-slide-toggle [(ngModel)]="settings.tradeAlerts.brahmastraAlerts" [disabled]="!settings.tradeAlerts.enabled" color="accent">
+                Brahmastra Alerts
+              </mat-slide-toggle>
+              <span class="alert-description">Get notified when Brahmastra strategy generates trade signals (Supertrend + MACD + VWAP)</span>
+            </div>
+
+            <div class="threshold-row">
+              <mat-form-field appearance="outline" class="threshold-field">
+                <mat-label>Min Confidence Threshold (%)</mat-label>
+                <input matInput type="number" [(ngModel)]="settings.tradeAlerts.minConfidenceThreshold"
+                       [disabled]="!settings.tradeAlerts.enabled" min="0" max="100" step="1">
+                <mat-hint>Only send alerts with confidence above this threshold</mat-hint>
+              </mat-form-field>
+            </div>
+          </div>
+        </div>
+      </mat-expansion-panel>
+
+      <!-- Prediction Alerts -->
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon class="category-icon prediction">auto_graph</mat-icon>
+            <span>Prediction Alerts</span>
+            <mat-chip-set class="status-chips">
+              <mat-chip [class.enabled]="settings.predictionAlerts.enabled" [class.disabled]="!settings.predictionAlerts.enabled">
+                {{ settings.predictionAlerts.enabled ? 'ON' : 'OFF' }}
+              </mat-chip>
+            </mat-chip-set>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <div class="alert-settings-content">
+          <div class="main-toggle-row">
+            <mat-slide-toggle [(ngModel)]="settings.predictionAlerts.enabled" color="primary">
+              <strong>Enable Prediction Alerts</strong>
+            </mat-slide-toggle>
+          </div>
+
+          <mat-divider></mat-divider>
+
+          <div class="sub-alerts" [class.disabled]="!settings.predictionAlerts.enabled">
+            <div class="alert-row">
+              <mat-slide-toggle [(ngModel)]="settings.predictionAlerts.candlePredictionAlerts" [disabled]="!settings.predictionAlerts.enabled" color="accent">
+                Candle Prediction Alerts
+              </mat-slide-toggle>
+            </div>
+            <div class="alert-row">
+              <mat-slide-toggle [(ngModel)]="settings.predictionAlerts.trendChangeAlerts" [disabled]="!settings.predictionAlerts.enabled" color="accent">
+                Trend Change Alerts
+              </mat-slide-toggle>
+            </div>
+            <div class="alert-row">
+              <mat-slide-toggle [(ngModel)]="settings.predictionAlerts.targetHitAlerts" [disabled]="!settings.predictionAlerts.enabled" color="accent">
+                Target Hit Alerts
+              </mat-slide-toggle>
+            </div>
+          </div>
+        </div>
+      </mat-expansion-panel>
+
+      <!-- Deviation Alerts -->
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon class="category-icon deviation">show_chart</mat-icon>
+            <span>Deviation Alerts</span>
+            <mat-chip-set class="status-chips">
+              <mat-chip [class.enabled]="settings.deviationAlerts.enabled" [class.disabled]="!settings.deviationAlerts.enabled">
+                {{ settings.deviationAlerts.enabled ? 'ON' : 'OFF' }}
+              </mat-chip>
+            </mat-chip-set>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <div class="alert-settings-content">
+          <div class="main-toggle-row">
+            <mat-slide-toggle [(ngModel)]="settings.deviationAlerts.enabled" color="primary">
+              <strong>Enable Deviation Alerts</strong>
+            </mat-slide-toggle>
+          </div>
+
+          <mat-divider></mat-divider>
+
+          <div class="sub-alerts" [class.disabled]="!settings.deviationAlerts.enabled">
+            <div class="threshold-row">
+              <mat-form-field appearance="outline" class="threshold-field">
+                <mat-label>Deviation Threshold (Points)</mat-label>
+                <input matInput type="number" [(ngModel)]="settings.deviationAlerts.deviationThresholdPoints"
+                       [disabled]="!settings.deviationAlerts.enabled" min="1" max="100" step="1">
+              </mat-form-field>
+            </div>
+            <div class="alert-row">
+              <mat-slide-toggle [(ngModel)]="settings.deviationAlerts.largeDeviationOnly" [disabled]="!settings.deviationAlerts.enabled" color="accent">
+                Large Deviations Only (more than 20 pts)
+              </mat-slide-toggle>
+            </div>
+          </div>
+        </div>
+      </mat-expansion-panel>
+
+      <!-- Pattern Alerts -->
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon class="category-icon pattern">candlestick_chart</mat-icon>
+            <span>Pattern Alerts</span>
+            <mat-chip-set class="status-chips">
+              <mat-chip [class.enabled]="settings.patternAlerts.enabled" [class.disabled]="!settings.patternAlerts.enabled">
+                {{ settings.patternAlerts.enabled ? 'ON' : 'OFF' }}
+              </mat-chip>
+            </mat-chip-set>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <div class="alert-settings-content">
+          <div class="main-toggle-row">
+            <mat-slide-toggle [(ngModel)]="settings.patternAlerts.enabled" color="primary">
+              <strong>Enable Pattern Alerts</strong>
+            </mat-slide-toggle>
+          </div>
+
+          <mat-divider></mat-divider>
+
+          <div class="sub-alerts" [class.disabled]="!settings.patternAlerts.enabled">
+            <div class="alert-row">
+              <mat-slide-toggle [(ngModel)]="settings.patternAlerts.bullishPatternAlerts" [disabled]="!settings.patternAlerts.enabled" color="accent">
+                Bullish Pattern Alerts
+              </mat-slide-toggle>
+            </div>
+            <div class="alert-row">
+              <mat-slide-toggle [(ngModel)]="settings.patternAlerts.bearishPatternAlerts" [disabled]="!settings.patternAlerts.enabled" color="accent">
+                Bearish Pattern Alerts
+              </mat-slide-toggle>
+            </div>
+            <div class="threshold-row">
+              <mat-form-field appearance="outline" class="threshold-field">
+                <mat-label>Min Confidence (%)</mat-label>
+                <input matInput type="number" [(ngModel)]="settings.patternAlerts.minConfidenceThreshold"
+                       [disabled]="!settings.patternAlerts.enabled" min="0" max="100" step="1">
+              </mat-form-field>
+            </div>
+          </div>
+        </div>
+      </mat-expansion-panel>
+
+      <!-- System Alerts -->
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon class="category-icon system">settings</mat-icon>
+            <span>System Alerts</span>
+            <mat-chip-set class="status-chips">
+              <mat-chip [class.enabled]="settings.systemAlerts.enabled" [class.disabled]="!settings.systemAlerts.enabled">
+                {{ settings.systemAlerts.enabled ? 'ON' : 'OFF' }}
+              </mat-chip>
+            </mat-chip-set>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <div class="alert-settings-content">
+          <div class="main-toggle-row">
+            <mat-slide-toggle [(ngModel)]="settings.systemAlerts.enabled" color="primary">
+              <strong>Enable System Alerts</strong>
+            </mat-slide-toggle>
+          </div>
+
+          <mat-divider></mat-divider>
+
+          <div class="sub-alerts" [class.disabled]="!settings.systemAlerts.enabled">
+            <div class="alert-row">
+              <mat-slide-toggle [(ngModel)]="settings.systemAlerts.tickerConnectionAlerts" [disabled]="!settings.systemAlerts.enabled" color="accent">
+                Ticker Connection Alerts
+              </mat-slide-toggle>
+            </div>
+            <div class="alert-row">
+              <mat-slide-toggle [(ngModel)]="settings.systemAlerts.jobStatusAlerts" [disabled]="!settings.systemAlerts.enabled" color="accent">
+                Job Status Alerts
+              </mat-slide-toggle>
+            </div>
+            <div class="alert-row">
+              <mat-slide-toggle [(ngModel)]="settings.systemAlerts.errorAlerts" [disabled]="!settings.systemAlerts.enabled" color="accent">
+                Error Alerts
+              </mat-slide-toggle>
+            </div>
+          </div>
+        </div>
+      </mat-expansion-panel>
+
+      <!-- Market Alerts -->
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon class="category-icon market">assessment</mat-icon>
+            <span>Market Alerts</span>
+            <mat-chip-set class="status-chips">
+              <mat-chip [class.enabled]="settings.marketAlerts.enabled" [class.disabled]="!settings.marketAlerts.enabled">
+                {{ settings.marketAlerts.enabled ? 'ON' : 'OFF' }}
+              </mat-chip>
+            </mat-chip-set>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <div class="alert-settings-content">
+          <div class="main-toggle-row">
+            <mat-slide-toggle [(ngModel)]="settings.marketAlerts.enabled" color="primary">
+              <strong>Enable Market Alerts</strong>
+            </mat-slide-toggle>
+          </div>
+
+          <mat-divider></mat-divider>
+
+          <div class="sub-alerts" [class.disabled]="!settings.marketAlerts.enabled">
+            <div class="alert-row">
+              <mat-slide-toggle [(ngModel)]="settings.marketAlerts.marketOpenCloseAlerts" [disabled]="!settings.marketAlerts.enabled" color="accent">
+                Market Open/Close Alerts
+              </mat-slide-toggle>
+            </div>
+            <div class="alert-row">
+              <mat-slide-toggle [(ngModel)]="settings.marketAlerts.significantMoveAlerts" [disabled]="!settings.marketAlerts.enabled" color="accent">
+                Significant Move Alerts
+              </mat-slide-toggle>
+            </div>
+            <div class="threshold-row">
+              <mat-form-field appearance="outline" class="threshold-field">
+                <mat-label>Move Threshold (%)</mat-label>
+                <input matInput type="number" [(ngModel)]="settings.marketAlerts.significantMoveThresholdPercent"
+                       [disabled]="!settings.marketAlerts.enabled" min="0.1" max="10" step="0.1">
+              </mat-form-field>
+            </div>
+          </div>
+        </div>
+      </mat-expansion-panel>
+
+    </mat-accordion>
+
+    <div class="save-button-container">
+      <button mat-raised-button color="primary" (click)="saveSettings()" [disabled]="isSaving" class="save-button">
+        <mat-icon *ngIf="!isSaving">save</mat-icon>
+        <mat-spinner *ngIf="isSaving" diameter="20"></mat-spinner>
+        {{ isSaving ? 'Saving...' : 'Save Settings' }}
+      </button>
+    </div>
+  </div>
+</div>

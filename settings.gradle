@@ -1,0 +1,2 @@
+rootProject.name = 'KTManager'
+include 'ktm-ui'

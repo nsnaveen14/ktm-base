@@ -1,0 +1,262 @@
+<div class="liquidity-sweep-container">
+  <div class="section-header">
+    <h3>
+      <mat-icon>water_drop</mat-icon>
+      Liquidity Sweep Analysis
+      <span class="whale-emoji" *ngIf="dashboard?.quantEngine?.hasWhaleActivity">🐋</span>
+    </h3>
+    <div class="header-actions">
+      <span class="last-update" *ngIf="lastRefresh">
+        Last: {{formatTime(lastRefresh.toISOString())}}
+      </span>
+      <button mat-icon-button (click)="runAnalysis()" [disabled]="isLoading" matTooltip="Run Fresh Analysis">
+        <mat-icon>play_arrow</mat-icon>
+      </button>
+      <button mat-icon-button (click)="refresh()" [disabled]="isLoading" matTooltip="Refresh Data">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="isLoading">
+    <mat-spinner diameter="40"></mat-spinner>
+    <span>Analyzing liquidity...</span>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-state" *ngIf="error && !isLoading">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{error}}</span>
+    <button mat-stroked-button (click)="refresh()">Retry</button>
+  </div>
+
+  <!-- No Data State -->
+  <div class="no-data-state" *ngIf="!isLoading && !error && (!dashboard || !dashboard.hasData)">
+    <mat-icon>hourglass_empty</mat-icon>
+    <span>No liquidity sweep data available</span>
+    <button mat-stroked-button color="primary" (click)="runAnalysis()">Run Analysis</button>
+  </div>
+
+  <!-- Main Content -->
+  <div class="content" *ngIf="!isLoading && dashboard?.hasData">
+    <!-- Trade Signal Card (Top Priority) -->
+    <mat-card class="signal-card" *ngIf="dashboard?.tradeSignal?.signalType && dashboard?.tradeSignal?.signalType !== 'NONE'"
+              [ngClass]="getSignalClass(dashboard?.tradeSignal?.signalType)">
+      <div class="signal-header">
+        <mat-icon>{{dashboard?.tradeSignal?.signalType === 'BUY' ? 'trending_up' : 'trending_down'}}</mat-icon>
+        <span class="signal-type">{{dashboard?.tradeSignal?.signalType}} Signal</span>
+        <mat-chip [ngClass]="getSignalClass(dashboard?.tradeSignal?.signalStrength)">
+          {{dashboard?.tradeSignal?.signalStrength}}
+        </mat-chip>
+        <span class="confidence">{{formatPercent(dashboard?.tradeSignal?.signalConfidence)}} confidence</span>
+      </div>
+      <div class="signal-body" *ngIf="dashboard?.tradeSignal?.isValidSetup">
+        <div class="level-item">
+          <label>Entry</label>
+          <span class="value">{{formatNumber(dashboard?.tradeSignal?.entryPrice)}}</span>
+        </div>
+        <div class="level-item stop-loss">
+          <label>Stop Loss</label>
+          <span class="value negative">{{formatNumber(dashboard?.tradeSignal?.stopLossPrice)}}</span>
+        </div>
+        <div class="level-item target">
+          <label>TP1 / TP2</label>
+          <span class="value positive">{{formatNumber(dashboard?.tradeSignal?.takeProfit1)}} / {{formatNumber(dashboard?.tradeSignal?.takeProfit2)}}</span>
+        </div>
+        <div class="level-item">
+          <label>R:R</label>
+          <span class="value">{{formatNumber(dashboard?.tradeSignal?.riskRewardRatio)}}:1</span>
+        </div>
+        <div class="level-item option">
+          <label>Option</label>
+          <span class="value">{{dashboard?.tradeSignal?.suggestedOptionType}} ({{dashboard?.tradeSignal?.optionStrategy}})</span>
+        </div>
+      </div>
+      <div class="invalid-setup" *ngIf="!dashboard?.tradeSignal?.isValidSetup">
+        <mat-icon>info</mat-icon>
+        <span>Signal detected but setup not fully validated</span>
+      </div>
+    </mat-card>
+
+    <!-- Stats Row -->
+    <div class="stats-row">
+      <div class="stat-item">
+        <mat-icon>analytics</mat-icon>
+        <div class="stat-content">
+          <span class="stat-value">{{dashboard?.todayStats?.totalAnalyses || 0}}</span>
+          <span class="stat-label">Analyses</span>
+        </div>
+      </div>
+      <div class="stat-item">
+        <mat-icon>verified</mat-icon>
+        <div class="stat-content">
+          <span class="stat-value">{{dashboard?.todayStats?.validSetups || 0}}</span>
+          <span class="stat-label">Valid Setups</span>
+        </div>
+      </div>
+      <div class="stat-item whale">
+        <mat-icon>{{getWhaleIcon(dashboard?.quantEngine?.whaleType)}}</mat-icon>
+        <div class="stat-content">
+          <span class="stat-value">{{dashboard?.todayStats?.whaleEvents || 0}}</span>
+          <span class="stat-label">Whale Events</span>
+        </div>
+      </div>
+      <div class="stat-item">
+        <mat-icon>swap_vert</mat-icon>
+        <div class="stat-content">
+          <span class="stat-value">{{(dashboard?.todayStats?.bslSweeps || 0) + (dashboard?.todayStats?.sslSweeps || 0)}}</span>
+          <span class="stat-label">Sweeps</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Panels -->
+    <div class="panels-grid">
+      <!-- Market Structure Panel -->
+      <mat-card class="panel-card market-structure">
+        <mat-card-header>
+          <mat-icon mat-card-avatar>layers</mat-icon>
+          <mat-card-title>Market Structure</mat-card-title>
+          <mat-card-subtitle>Liquidity Pools</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="liquidity-levels">
+            <div class="level-group bsl">
+              <h4>Buy Side Liquidity (BSL)</h4>
+              <div class="levels">
+                <span class="level" *ngIf="dashboard?.marketStructure?.bslLevel1">
+                  <mat-icon>arrow_upward</mat-icon>
+                  {{formatNumber(dashboard?.marketStructure?.bslLevel1)}}
+                </span>
+                <span class="level secondary" *ngIf="dashboard?.marketStructure?.bslLevel2">
+                  {{formatNumber(dashboard?.marketStructure?.bslLevel2)}}
+                </span>
+              </div>
+            </div>
+            <div class="current-price">
+              <mat-icon>fiber_manual_record</mat-icon>
+              <span>{{formatNumber(dashboard?.priceData?.close)}}</span>
+            </div>
+            <div class="level-group ssl">
+              <h4>Sell Side Liquidity (SSL)</h4>
+              <div class="levels">
+                <span class="level" *ngIf="dashboard?.marketStructure?.sslLevel1">
+                  <mat-icon>arrow_downward</mat-icon>
+                  {{formatNumber(dashboard?.marketStructure?.sslLevel1)}}
+                </span>
+                <span class="level secondary" *ngIf="dashboard?.marketStructure?.sslLevel2">
+                  {{formatNumber(dashboard?.marketStructure?.sslLevel2)}}
+                </span>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Quant Engine Panel -->
+      <mat-card class="panel-card quant-engine" [ngClass]="{'whale-active': dashboard?.quantEngine?.hasWhaleActivity}">
+        <mat-card-header>
+          <mat-icon mat-card-avatar>{{getWhaleIcon(dashboard?.quantEngine?.whaleType)}}</mat-icon>
+          <mat-card-title>Quant Engine</mat-card-title>
+          <mat-card-subtitle>Whale Detection</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="quant-metrics">
+            <div class="metric">
+              <label>Volume Z-Score</label>
+              <span class="value" [ngClass]="{'highlight': (dashboard?.quantEngine?.volumeZScore || 0) > 2}">
+                {{formatNumber(dashboard?.quantEngine?.volumeZScore)}}σ
+              </span>
+            </div>
+            <div class="metric">
+              <label>Kaufman Efficiency</label>
+              <span class="value">{{formatNumber(dashboard?.quantEngine?.kaufmanEfficiency)}}</span>
+            </div>
+            <div class="metric whale-type" *ngIf="dashboard?.quantEngine?.hasWhaleActivity">
+              <label>Whale Type</label>
+              <mat-chip [ngClass]="dashboard?.quantEngine?.whaleType?.toLowerCase()">
+                <mat-icon>{{getWhaleIcon(dashboard?.quantEngine?.whaleType)}}</mat-icon>
+                {{dashboard?.quantEngine?.whaleType}}
+              </mat-chip>
+            </div>
+            <div class="metric no-whale" *ngIf="!dashboard?.quantEngine?.hasWhaleActivity">
+              <span class="muted">No significant whale activity detected</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Trend & Momentum Panel -->
+      <mat-card class="panel-card trend-momentum">
+        <mat-card-header>
+          <mat-icon mat-card-avatar>{{getTrendIcon(dashboard?.trendMomentum?.trendDirection)}}</mat-icon>
+          <mat-card-title>Trend & Momentum</mat-card-title>
+          <mat-card-subtitle>EMA 200 + RSI</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="trend-metrics">
+            <div class="metric">
+              <label>EMA 200</label>
+              <span class="value">{{formatNumber(dashboard?.trendMomentum?.ema200)}}</span>
+            </div>
+            <div class="metric">
+              <label>Trend</label>
+              <mat-chip [ngClass]="getSignalClass(dashboard?.trendMomentum?.trendDirection)">
+                <mat-icon>{{getTrendIcon(dashboard?.trendMomentum?.trendDirection)}}</mat-icon>
+                {{dashboard?.trendMomentum?.trendDirection || 'NEUTRAL'}}
+              </mat-chip>
+            </div>
+            <div class="metric">
+              <label>RSI (14)</label>
+              <span class="value" [ngClass]="{
+                'oversold': dashboard?.trendMomentum?.isRsiOversold,
+                'overbought': dashboard?.trendMomentum?.isRsiOverbought
+              }">
+                {{formatNumber(dashboard?.trendMomentum?.rsiValue)}}
+              </span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Sweep Detection Panel -->
+      <mat-card class="panel-card sweep-detection"
+                [ngClass]="{'sweep-active': dashboard?.sweepDetection?.bslSwept || dashboard?.sweepDetection?.sslSwept}">
+        <mat-card-header>
+          <mat-icon mat-card-avatar>{{getSweepIcon(dashboard?.sweepDetection?.sweepType)}}</mat-icon>
+          <mat-card-title>Sweep Detection</mat-card-title>
+          <mat-card-subtitle>Smart Entry Trigger</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="sweep-info" *ngIf="dashboard?.sweepDetection?.sweepType && dashboard?.sweepDetection?.sweepType !== 'NONE'">
+            <div class="sweep-type" [ngClass]="dashboard?.sweepDetection?.sweepType?.toLowerCase()">
+              <mat-icon>{{getSweepIcon(dashboard?.sweepDetection?.sweepType)}}</mat-icon>
+              <span>{{dashboard?.sweepDetection?.sweepType === 'BSL_SWEEP' ? 'BSL Swept' : 'SSL Swept'}}</span>
+              <span class="swept-level">&#64; {{formatNumber(dashboard?.sweepDetection?.sweptLevel)}}</span>
+            </div>
+            <div class="confirmations">
+              <span class="confirmation" [ngClass]="{'confirmed': dashboard?.sweepDetection?.priceClosedBack}">
+                <mat-icon>{{dashboard?.sweepDetection?.priceClosedBack ? 'check_circle' : 'cancel'}}</mat-icon>
+                Price Closed Back
+              </span>
+              <span class="confirmation" [ngClass]="{'confirmed': dashboard?.sweepDetection?.hasInstitutionalConfirmation}">
+                <mat-icon>{{dashboard?.sweepDetection?.hasInstitutionalConfirmation ? 'check_circle' : 'cancel'}}</mat-icon>
+                Institutional Confirmation
+              </span>
+              <span class="confirmation" [ngClass]="{'confirmed': dashboard?.sweepDetection?.isTrendAligned}">
+                <mat-icon>{{dashboard?.sweepDetection?.isTrendAligned ? 'check_circle' : 'cancel'}}</mat-icon>
+                Trend Aligned
+              </span>
+            </div>
+          </div>
+          <div class="no-sweep" *ngIf="!dashboard?.sweepDetection?.sweepType || dashboard?.sweepDetection?.sweepType === 'NONE'">
+            <mat-icon>remove_circle_outline</mat-icon>
+            <span>No liquidity sweep detected</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>
+

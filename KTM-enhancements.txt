@@ -1,0 +1,47 @@
+You are an expert Nifty 50 options trader specializing in breakout/breakdown failure setups (fakeouts). Create a complete trading strategy for intraday Nifty 50 weekly options (e.g., current expiry ATM calls/puts). 
+Focus on failures around key levels.
+
+**Setup Rules:**
+- Timeframe: 5-min or 15-min Nifty 50 index chart, Indian market hours (9:15 AM - 3:30 PM IST).
+- Key levels: Prior day high/low, or first 15/30-min candle high/low (ORH/ORL).
+- Bullish breakout failure (fakeout high): Price breaks above level by 0.2-0.5% (e.g., 50-100 points on Nifty ~25,000), closes back below within 2-5 candles, with volume drop or RSI divergence.
+- Bearish breakdown failure (fakeout low): Price breaks below level by 0.2-0.5%, closes back above within 2-5 candles.
+
+**Entry Triggers:**
+- For failed bullish breakout: Buy ATM/OTM put options when price reclaims level + bearish candle confirmation (e.g., engulfing red).
+- For failed bearish breakdown: Buy ATM/OTM call options when price reclaims level + bullish candle confirmation.
+- Max 1 trade/day, enter post-9:45 AM to avoid opening volatility.
+- Position size: 1-2% account risk.
+
+**Risk Management:**
+- Stop loss: 20-30 points on option premium (or above/below failed level + buffer).
+- Target: 1:2-1:3 RR (e.g., 40-60 points profit), or trail to next support/resistance.
+- Exit by 3:15 PM if open.
+
+**Filters:**
+- Avoid event days (RBI policy, expiry). Require ADX >25 for trend strength, but failure on high volume.
+- Win rate goal: 55-65% based on Nifty historicals.
+
+Refine based on my risk tolerance: Conservative (1% risk, wider stops). I need a separate tab called BOBD Failures, with realtime telegram notifications and configurations, along with backtesting and performance
+
+
+
+
+I'll create:
+Entity - BOBDSignal entity for storing fakeout signals
+Configuration Entity - BOBDConfiguration for strategy settings
+Service Interface - BOBDFailureService
+Service Implementation - BOBDFailureServiceImpl
+Repository - BOBDSignalRepository and BOBDConfigRepository
+Controller - BOBDFailureController
+Frontend Component - Angular component for the BOBD Failures tab
+Frontend Service - Angular service for API calls
+Frontend Models - TypeScript models
+
+
+
+## Core Requirements
+**Strategies to implement exactly:**
+1. **ORB (15-min Opening Range Breakout)**: 9:15-9:30 AM IST range → buy 0.3 delta OTM calls on upside volume breakout, puts on downside. SL: opposite range extreme. Target: 1:2 RR.
+2. **VWAP Pullback**: Post-1 PM, price pulls to VWAP + RSI>40 → buy bounce directionally. SL: 0.5% premium decay.
+3. **Supertrend Breakout**: Supertrend(10,3) flip + ADX>25 → buy 0.3 delta OTM directional. Trail SL on flip.

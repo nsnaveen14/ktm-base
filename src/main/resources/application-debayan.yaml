@@ -1,0 +1,66 @@
+server:
+  port: 8085
+
+spring:
+  boot:
+    admin:
+      client:
+        url: http://localhost:8080
+  application:
+    name: KTManager
+  datasource:
+    url: jdbc:postgresql://localhost:5432/KalyaniTradingApp?currentSchema=realtime
+    username: 
+    password: 
+    driverClassName: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        default_schema: realtime
+        show_sql: false
+        connection:
+          autocommit: true
+        transaction:
+          coordinator_class: jdbc
+          jta:
+            platform: org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform
+
+
+kite:
+  rootUrl:  https://api.kite.trade/
+  loginUrl: https://kite.trade/connect/login?v=3&api_key=
+  webSocketUrl: wss://ws.kite.trade?api_key=xxx&access_token=yyy
+  apiKey: 
+  apiSecret: 
+
+kiteUserName: 
+
+# Telegram Bot Configuration
+# To set up your Telegram Bot:
+# 1. Message @BotFather on Telegram and send /newbot
+# 2. Follow the instructions to create your bot and get the token
+# 3. Get your chat ID by messaging @userinfobot or using the /getUpdates API
+# 4. Set the values below
+telegram:
+  enabled: true  # Set to true to enable Telegram notifications
+  botToken:   # Token from @BotFather
+  defaultChatId:   # Your Telegram user ID or group chat ID
+  parseMode: HTML  # HTML, Markdown, or MarkdownV2
+  disableWebPagePreview: true
+  disableNotification: false  # Set to true for silent notifications
+  connectionTimeout: 10000
+  readTimeout: 10000
+  maxRetries: 3
+  retryDelayMs: 1000
+  rateLimitMs: 1000  # Minimum interval between messages
+  categories:
+    tradeAlerts: true
+    predictionAlerts: false
+    deviationAlerts: false
+    systemAlerts: false
+    patternAlerts: false
+    marketAlerts: false
+

@@ -1,0 +1,95 @@
+Starting a Gradle Daemon, 3 incompatible Daemons could not be reused, use --status for details
+> Task :ktm-ui:compileJava NO-SOURCE
+> Task :ktm-ui:processResources NO-SOURCE
+> Task :ktm-ui:classes UP-TO-DATE
+> Task :ktm-ui:nodeSetup UP-TO-DATE
+> Task :ktm-ui:npmSetup UP-TO-DATE
+> Task :ktm-ui:npmInstall UP-TO-DATE
+
+> Task :ktm-ui:npm_run_build
+
+> ktm-ui@0.0.0 build
+> ng build
+
+[33m>[39m Building...
+[32m√[39m Building...
+[1mInitial chunk files[22m  [2m | [22m[1mNames[22m        [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m
+[32mmain-F5KLSQBD.js[39m     [2m | [22m[2mmain[22m         [2m | [22m  [36m1.30 MB[39m[2m | [22m              [36m266.65 kB[39m
+[32mstyles-NREHMOAZ.css[39m  [2m | [22m[2mstyles[22m       [2m | [22m[36m249.40 kB[39m[2m | [22m               [36m25.05 kB[39m
+[32mchunk-6CKCORFA.js[39m    [2m | [22m[2m-[22m            [2m | [22m[36m198.20 kB[39m[2m | [22m               [36m56.75 kB[39m
+[32mpolyfills-EQXJKH7W.js[39m[2m | [22m[2mpolyfills[22m    [2m | [22m [36m35.81 kB[39m[2m | [22m               [36m11.76 kB[39m
+
+[1m [22m                    [2m | [22m[1mInitial total[22m[2m | [22m  [1m1.79 MB[22m[2m | [22m              [1m360.20 kB[22m
+
+[1mLazy chunk files[22m     [2m | [22m[1mNames[22m        [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m
+[32mchunk-LU3MXUDC.js[39m    [2m | [22m[2mbrowser[22m      [2m | [22m [36m63.96 kB[39m[2m | [22m               [36m17.11 kB[39m
+
+Application bundle generation complete. [13.440 seconds]
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mModule 'highcharts' used by 'src/app/components/analytics/analytics.component.ts' is not ESM[0m
+
+  CommonJS or AMD dependencies can cause optimization bailouts.
+  For more information see: [4mhttps://angular.dev/tools/cli/build#configuring-commonjs-dependencies[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1m9 rules skipped due to selector errors:
+  .table>>*>* -> Did not expect successive traversals.
+  .table-sm>>*>* -> Did not expect successive traversals.
+  .table-bordered>>* -> Did not expect successive traversals.
+  .table-bordered>>*>* -> Did not expect successive traversals.
+  .table-borderless>>*>* -> Did not expect successive traversals.
+  .form-floating>~label -> Did not expect successive traversals.
+  .form-floating>~label -> Did not expect successive traversals.
+  .btn-group>+.btn -> Did not expect successive traversals.
+  .btn-group>+.btn -> Did not expect successive traversals.[0m
+
+[39m[22m
+Output location: C:\Users\Administrator\IdeaProjects\KTManager\ktm-ui\dist\ktm-ui
+
+
+> Task :ktm-ui:jar UP-TO-DATE
+
+> Task :compileJava FAILED
+C:\Users\Administrator\IdeaProjects\KTManager\src\main\java\com\trading\kalyani\KTManager\service\serviceImpl\SimulatedTradingServiceImpl.java:536: error: unnamed classes are a preview feature and are disabled by default.
+    private boolean validateSignalWithGEX(String tradeDirection) {
+            ^
+  (use --enable-preview to enable unnamed classes)
+C:\Users\Administrator\IdeaProjects\KTManager\src\main\java\com\trading\kalyani\KTManager\service\serviceImpl\SimulatedTradingServiceImpl.java:1576: error: class, interface, enum, or record expected
+}
+^
+C:\Users\Administrator\IdeaProjects\KTManager\src\main\java\com\trading\kalyani\KTManager\service\serviceImpl\SimulatedTradingServiceImpl.java:1: error: unnamed class should not have package declaration
+package com.trading.kalyani.KTManager.service.serviceImpl;
+^
+3 errors
+
+[Incubating] Problems report is available at: file:///C:/Users/Administrator/IdeaProjects/KTManager/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileJava'.
+> Compilation failed; see the compiler output below.
+  C:\Users\Administrator\IdeaProjects\KTManager\src\main\java\com\trading\kalyani\KTManager\service\serviceImpl\SimulatedTradingServiceImpl.java:536: error: unnamed classes are a preview feature and are disabled by default.
+      private boolean validateSignalWithGEX(String tradeDirection) {
+              ^
+    (use --enable-preview to enable unnamed classes)
+  C:\Users\Administrator\IdeaProjects\KTManager\src\main\java\com\trading\kalyani\KTManager\service\serviceImpl\SimulatedTradingServiceImpl.java:1576: error: class, interface, enum, or record expected
+  }
+  ^
+  C:\Users\Administrator\IdeaProjects\KTManager\src\main\java\com\trading\kalyani\KTManager\service\serviceImpl\SimulatedTradingServiceImpl.java:1: error: unnamed class should not have package declaration
+  package com.trading.kalyani.KTManager.service.serviceImpl;
+  ^
+  3 errors
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to get full insights.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.12.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 43s
+6 actionable tasks: 2 executed, 4 up-to-date

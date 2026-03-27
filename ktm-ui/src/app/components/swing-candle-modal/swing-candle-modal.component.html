@@ -1,0 +1,50 @@
+<div class="modal-header">
+  <h5 class="modal-title" id="swingCandleModalLabel">Swing Candle Data</h5>
+  <button type="button" class="btn-close" aria-label="Close" (click)="activeModal.dismiss()"></button>
+</div>
+<div class="modal-body">
+  <div *ngIf="swingCandleData">
+    <div *ngFor="let entry of swingCandleData | keyvalue" class="mb-4">
+      <h6>Config: {{ entry.key }}</h6>
+      <div class="row">
+        <div class="col-md-6">
+          <h6 class="text-success">Swing High</h6>
+          <table class="table table-sm table-bordered">
+            <tbody>
+              <tr><td><strong>ID:</strong></td><td>{{ entry.value.swingHigh.id }}</td></tr>
+              <tr><td><strong>Instrument Token:</strong></td><td>{{ entry.value.swingHigh.instrumentToken }}</td></tr>
+              <tr><td><strong>Open Price:</strong></td><td>{{ entry.value.swingHigh.openPrice }}</td></tr>
+              <tr><td><strong>High Price:</strong></td><td>{{ entry.value.swingHigh.highPrice }}</td></tr>
+              <tr><td><strong>Low Price:</strong></td><td>{{ entry.value.swingHigh.lowPrice }}</td></tr>
+              <tr><td><strong>Close Price:</strong></td><td>{{ entry.value.swingHigh.closePrice }}</td></tr>
+              <tr><td><strong>Start Time:</strong></td><td>{{ entry.value.swingHigh.candleStartTime }}</td></tr>
+              <tr><td><strong>End Time:</strong></td><td>{{ entry.value.swingHigh.candleEndTime }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="col-md-6">
+          <h6 class="text-danger">Swing Low</h6>
+          <table class="table table-sm table-bordered">
+            <tbody>
+              <tr><td><strong>ID:</strong></td><td>{{ entry.value.swingLow.id }}</td></tr>
+              <tr><td><strong>Instrument Token:</strong></td><td>{{ entry.value.swingLow.instrumentToken }}</td></tr>
+              <tr><td><strong>Open Price:</strong></td><td>{{ entry.value.swingLow.openPrice }}</td></tr>
+              <tr><td><strong>High Price:</strong></td><td>{{ entry.value.swingLow.highPrice }}</td></tr>
+              <tr><td><strong>Low Price:</strong></td><td>{{ entry.value.swingLow.lowPrice }}</td></tr>
+              <tr><td><strong>Close Price:</strong></td><td>{{ entry.value.swingLow.closePrice }}</td></tr>
+              <tr><td><strong>Start Time:</strong></td><td>{{ entry.value.swingLow.candleStartTime }}</td></tr>
+              <tr><td><strong>End Time:</strong></td><td>{{ entry.value.swingLow.candleEndTime }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <hr>
+    </div>
+  </div>
+  <div *ngIf="!swingCandleData" class="text-center">
+    <p>No data available</p>
+  </div>
+</div>
+<div class="modal-footer">
+  <button type="button" class="btn btn-secondary" (click)="activeModal.close()">Close</button>
+</div>

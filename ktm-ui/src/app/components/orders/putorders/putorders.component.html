@@ -1,0 +1,66 @@
+<div class="mat-elevation-z8">
+  
+    <mat-form-field>
+      <mat-label>Filter</mat-label>
+      <input matInput (keyup)="applyFilter($event)" placeholder="Ex. NIFTY" #input>
+    </mat-form-field>
+  <table mat-table [dataSource]="putTableDataSource" class="mat-elevation-z8">
+      <!--- Note that these columns can be defined in any order.
+          The actual rendered columns are set as a property on the row definition" -->
+  
+     <ng-container matColumnDef="select">
+            <th mat-header-cell *matHeaderCellDef>
+              <mat-checkbox (change)="$event ? toggleAllRows() : null"
+                            [checked]="selection.hasValue() && isAllSelected()"
+                            [indeterminate]="selection.hasValue() && !isAllSelected()"
+                            [aria-label]="checkboxLabel()">
+              </mat-checkbox>
+            </th>
+            <td mat-cell *matCellDef="let row">
+              <mat-checkbox (click)="$event.stopPropagation()"
+                            (change)="$event ? selection.toggle(row) : null"
+                            [checked]="selection.isSelected(row)"
+                            [aria-label]="checkboxLabel(row)">
+              </mat-checkbox>
+            </td>
+    </ng-container>
+    
+  
+    <ng-container matColumnDef="strike">
+      <th mat-header-cell *matHeaderCellDef> Strike </th>
+      <td mat-cell *matCellDef="let element"> {{element.strike}} </td>
+    </ng-container> 
+  
+    <ng-container matColumnDef="instrument_token">
+      <th mat-header-cell *matHeaderCellDef> Instrument Token </th>
+      <td mat-cell *matCellDef="let element"> {{element.instrument_token}} </td>
+    </ng-container>
+      
+  
+    <ng-container matColumnDef="tradingsymbol">
+      <th mat-header-cell *matHeaderCellDef> Trading Symbol </th>
+      <td mat-cell *matCellDef="let element"> {{element.tradingsymbol}} </td>
+    </ng-container>
+          
+    <ng-container matColumnDef="last_price">
+      <th mat-header-cell *matHeaderCellDef> Last Price</th>
+      <td mat-cell *matCellDef="let element"> {{element.last_price}} </td>
+    </ng-container>
+     
+    <tr mat-header-row *matHeaderRowDef="putTableColumns"></tr>
+    <!-- <tr mat-row *matRowDef="let row; columns: putTableColumns;" (click)="selection.toggle(row)"></tr>  -->
+    <tr mat-row *matRowDef="let row; columns: putTableColumns;" (click)="openDialog(row)"></tr>
+   
+    <tr class="mat-row" *matNoDataRow>
+      <td class="mat-cell" colspan="4">No data matching the filter "{{input.value}}"</td>
+    </tr> 
+  
+  </table>
+  <mat-paginator 
+  [length]="putTableDataSource.data.length"
+  [pageSize]="6"
+  [pageSizeOptions]="[6, 8]"
+  showFirstLastButtons
+  aria-label="Select page of Instrument tokens">
+</mat-paginator>
+  </div>

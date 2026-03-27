@@ -1,0 +1,63 @@
+server:
+  port: 8085
+
+kite:
+  rootUrl:  https://api.kite.trade/
+  loginUrl: https://kite.trade/connect/login?v=3&api_key=
+  webSocketUrl: wss://ws.kite.trade?api_key=xxx&access_token=yyy
+  apiKey:
+  apiSecret:
+
+kiteUserName:
+
+email:
+  smtp:
+    host: smtp.gmail.com
+    port: 587
+  username: 
+  password: 
+
+spring.cache.type:  simple
+spring.cache.cache-names: appIndexConfig
+aws.s3.region:  ap-south-1
+aws.access.key.id: 
+aws.secret.access.key: 
+
+ktm:
+  s3:
+    bucketName: ktm-application
+    snapshotOIFolderName: snapshotOI
+  trading:
+    trailing:
+      activationThresholdPercent: 50.0
+      trailPercentOfProfit: 50.0
+
+market:
+  task:
+    pre:
+      cron:
+        startTicker: 1 09 9 * * *
+
+    post:
+      cron:
+        stopTicker: 10 30 15 * * *
+
+# Candle Prediction Job Configuration
+candle:
+  prediction:
+    job:
+      enabled: true  # Enable/disable the automated prediction job
+    verification:
+      enabled: true  # Enable/disable the automated verification job
+
+
+
+# File: `src/main/resources/application.properties`
+# (optional) customize endpoints
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  # set swagger-ui at /swagger-ui.html (springdoc also exposes /swagger-ui/index.html)
+  swagger-ui:
+    path: /swagger-ui.html
+

@@ -1,0 +1,145 @@
+<div class="performance-charts-container">
+  <!-- Header -->
+  <div class="section-header">
+    <div class="header-left">
+      <mat-icon>insights</mat-icon>
+      <h4>Performance Analytics</h4>
+    </div>
+    <div class="header-right">
+      <mat-button-toggle-group [(ngModel)]="selectedPeriod" (change)="onPeriodChange($event.value)">
+        <mat-button-toggle value="daily">Daily</mat-button-toggle>
+        <mat-button-toggle value="weekly">Weekly</mat-button-toggle>
+        <mat-button-toggle value="monthly">Monthly</mat-button-toggle>
+      </mat-button-toggle-group>
+      <button mat-icon-button (click)="loadPerformanceData()" [disabled]="isLoading" matTooltip="Refresh">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="isLoading">
+    <mat-spinner diameter="40"></mat-spinner>
+    <span>Loading performance data...</span>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-state" *ngIf="error && !isLoading">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{error}}</span>
+    <button mat-stroked-button (click)="loadPerformanceData()">Retry</button>
+  </div>
+
+  <!-- Content -->
+  <div class="content" *ngIf="!isLoading && !error && performanceData">
+    <!-- Summary Cards -->
+    <div class="summary-row">
+      <div class="summary-stat">
+        <span class="stat-label">Total Trades</span>
+        <span class="stat-value">{{getTotalStats().totalTrades}}</span>
+      </div>
+      <div class="summary-stat">
+        <span class="stat-label">Win Rate</span>
+        <span class="stat-value" [ngClass]="getTotalStats().winRate >= 50 ? 'positive' : 'negative'">
+          {{formatPercent(getTotalStats().winRate)}}
+        </span>
+      </div>
+      <div class="summary-stat">
+        <span class="stat-label">Total P&L</span>
+        <span class="stat-value" [ngClass]="getTotalStats().pnl >= 0 ? 'positive' : 'negative'">
+          {{formatCurrency(getTotalStats().pnl)}}
+        </span>
+      </div>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="charts-grid">
+      <!-- Win Rate Chart -->
+      <div class="chart-card">
+        <highcharts-chart
+          [Highcharts]="Highcharts"
+          [options]="winRateChartOptions"
+          [update]="true"
+          style="width: 100%; height: 200px; display: block;">
+        </highcharts-chart>
+      </div>
+
+      <!-- P&L Chart -->
+      <div class="chart-card">
+        <highcharts-chart
+          [Highcharts]="Highcharts"
+          [options]="pnlChartOptions"
+          [update]="true"
+          style="width: 100%; height: 200px; display: block;">
+        </highcharts-chart>
+      </div>
+
+      <!-- Trend Chart -->
+      <div class="chart-card wide">
+        <highcharts-chart
+          [Highcharts]="Highcharts"
+          [options]="trendChartOptions"
+          [update]="true"
+          style="width: 100%; height: 200px; display: block;">
+        </highcharts-chart>
+      </div>
+
+      <!-- Source Breakdown -->
+      <div class="chart-card">
+        <highcharts-chart
+          [Highcharts]="Highcharts"
+          [options]="sourceBreakdownOptions"
+          [update]="true"
+          style="width: 100%; height: 200px; display: block;">
+        </highcharts-chart>
+      </div>
+    </div>
+
+    <!-- Detailed Stats Table -->
+    <div class="stats-table-card">
+      <h5>Signal Source Performance ({{selectedPeriod | titlecase}})</h5>
+      <table class="stats-table">
+        <thead>
+          <tr>
+            <th>Signal Source</th>
+            <th>Trades</th>
+            <th>Wins</th>
+            <th>Losses</th>
+            <th>Win Rate</th>
+            <th>P&L</th>
+            <th>Profit Factor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let stat of getCurrentPeriodStats()">
+            <td>
+              <span class="source-badge" [style.background]="getSourceColor(stat.signalSource)">
+                {{stat.displayName}}
+              </span>
+            </td>
+            <td>{{stat.totalTrades}}</td>
+            <td class="positive">{{stat.winningTrades}}</td>
+            <td class="negative">{{stat.losingTrades}}</td>
+            <td [ngClass]="stat.winRate >= 50 ? 'positive' : 'negative'">
+              {{formatPercent(stat.winRate)}}
+            </td>
+            <td [ngClass]="stat.pnl >= 0 ? 'positive' : 'negative'">
+              {{formatCurrency(stat.pnl)}}
+            </td>
+            <td [ngClass]="stat.profitFactor >= 1 ? 'positive' : 'negative'">
+              {{stat.profitFactor > 100 ? '∞' : stat.profitFactor.toFixed(2)}}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- No Data State -->
+  <div class="no-data-state" *ngIf="!isLoading && !error && (!performanceData || getTotalStats().totalTrades === 0)">
+    <mat-icon>show_chart</mat-icon>
+    <span>No performance data available yet</span>
+    <span class="sub-text">Complete some trades to see analytics</span>
+  </div>
+</div>
+

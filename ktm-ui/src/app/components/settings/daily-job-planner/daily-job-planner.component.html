@@ -1,0 +1,57 @@
+<div *ngIf="dailyJobPlannerPaginatorDataSource.data && dailyJobPlannerPaginatorDataSource.data.length > 0" class="mat-elevation-z8">
+
+    <table mat-table [dataSource]="dailyJobPlannerPaginatorDataSource" class="mat-elevation-z8" style="width: 100%">
+  
+      <ng-container matColumnDef="appJobConfigNum">
+        <th mat-header-cell *matHeaderCellDef>Config Num</th>
+        <td mat-cell *matCellDef="let element"> {{element.id.appJobConfigNum}} </td>
+      </ng-container>
+  
+      <ng-container matColumnDef="jobDate">
+        <th mat-header-cell *matHeaderCellDef>Job Date</th>
+        <td mat-cell *matCellDef="let element"> {{element.id.jobDate | date:'shortDate'}} </td>
+      </ng-container>
+  
+      <ng-container matColumnDef="jobForExpiryDate">
+        <th mat-header-cell *matHeaderCellDef>Expiry Date</th>
+        <td mat-cell *matCellDef="let element"> {{element.jobForExpiryDate | date:'shortDate'}} </td>
+      </ng-container>
+  
+      <ng-container matColumnDef="lastModified">
+        <th mat-header-cell *matHeaderCellDef>Last Modified</th>
+        <td mat-cell *matCellDef="let element"> {{element.lastModified | date:'short'}} </td>
+      </ng-container>
+  
+      <ng-container matColumnDef="jobRequired">
+        <th mat-header-cell *matHeaderCellDef>Job Required</th>
+        <td mat-cell *matCellDef="let element">
+          <ng-container *ngIf="editingRow === element && editingColumn === 'jobRequired'; else displayJobRequired">
+            <mat-checkbox
+              [(ngModel)]="element.jobRequired"
+              (change)="saveEdit(element, 'jobRequired', element.jobRequired)"
+              (blur)="saveEdit(element, 'jobRequired', element.jobRequired)"
+              [autofocus]="true">
+            </mat-checkbox>
+          </ng-container>
+          <ng-template #displayJobRequired>
+            <span 
+              (dblclick)="startEdit(element, 'jobRequired')" 
+              matTooltip="Double click to edit"
+              style="cursor: pointer; display: flex; align-items: center;"
+            >
+              {{element.jobRequired ? 'Yes' : 'No'}}
+              <mat-icon fontIcon="edit" style="font-size: 16px; margin-left: 4px; color: #888;"></mat-icon>
+            </span>
+          </ng-template>
+        </td>
+      </ng-container>
+  
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    </table>
+  
+  </div>
+  <mat-paginator [pageSizeOptions]="[5,7]" showFirstLastButtons aria-label="Daily Job Planner"></mat-paginator>
+  <div *ngIf="!dailyJobPlannerPaginatorDataSource.data || dailyJobPlannerPaginatorDataSource.data.length === 0">
+    <p>No data found</p>
+  </div>

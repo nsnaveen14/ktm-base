@@ -1,0 +1,18 @@
+<div class="row" style="height: 600px; padding:0.5%">
+    <div class="col-sm-6">
+        <app-callorders [callTableDataSource]="callTableDataSource"></app-callorders>
+    </div>
+    <div class="col-sm-6">
+        <app-putorders [putTableDataSource]="putTableDataSource"></app-putorders>
+    </div>
+</div>
+<div class="row" style="height: 600px; padding:0.5%">
+    <div class="col-sm-6">
+        <h2>My Orders</h2>
+        <app-myorders></app-myorders>
+    </div>
+    <div class="col-sm-6">
+        <h2>My Positions</h2>
+        <app-mypositions></app-mypositions>
+    </div>
+</div>

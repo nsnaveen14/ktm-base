@@ -1,0 +1,110 @@
+<div class="iob-chart-container">
+  <!-- Chart Controls -->
+  <div class="chart-controls">
+    <div class="control-left">
+      <div class="instrument-selector">
+        <button mat-button
+                [class.active]="selectedInstrument === 'NIFTY'"
+                (click)="changeInstrument('NIFTY')">
+          NIFTY
+        </button>
+      </div>
+
+      <mat-form-field class="interval-select" appearance="outline">
+        <mat-label>Interval</mat-label>
+        <mat-select [(ngModel)]="selectedInterval" (selectionChange)="changeInterval($event.value)">
+          <mat-option *ngFor="let int of intervals" [value]="int.value">
+            {{ int.label }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="control-right">
+      <div class="price-display" *ngIf="currentPrice">
+        <span class="price-label">LTP:</span>
+        <span class="price-value">₹{{ currentPrice | number:'1.2-2' }}</span>
+      </div>
+
+      <button mat-icon-button matTooltip="Refresh" (click)="refreshChart()">
+        <mat-icon>refresh</mat-icon>
+      </button>
+      <button mat-icon-button matTooltip="Zoom to Fit" (click)="zoomToFit()">
+        <mat-icon>fit_screen</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <mat-spinner diameter="40"></mat-spinner>
+    <span>Loading chart data...</span>
+  </div>
+
+  <!-- Chart Container -->
+  <div #chartContainer class="chart-area"></div>
+
+  <!-- IOB Zones Legend with Selection -->
+  <div class="chart-legend" *ngIf="chartData?.iobZones?.length">
+    <div class="legend-header">
+      <h4>Active IOB Zones</h4>
+      <div class="legend-actions">
+        <button mat-stroked-button
+                [color]="selectAllZones ? 'primary' : 'default'"
+                (click)="toggleSelectAllZones()"
+                matTooltip="Toggle all zones on/off">
+          <mat-icon>{{ selectAllZones ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+          {{ selectAllZones ? 'Deselect All' : 'Select All' }}
+        </button>
+        <span class="zone-selection-count">
+          {{ getSelectedZoneCount() }} of {{ chartData?.iobZones?.length }} selected
+        </span>
+      </div>
+    </div>
+    <div class="legend-items">
+      <div class="legend-item"
+           *ngFor="let zone of chartData?.iobZones"
+           [class.selected]="isZoneSelected(zone.id)"
+           [class.unselected]="!isZoneSelected(zone.id)">
+        <mat-checkbox
+          [checked]="isZoneSelected(zone.id)"
+          (change)="toggleZoneSelection(zone.id)"
+          color="primary">
+        </mat-checkbox>
+        <span class="zone-indicator"
+              [class.bullish]="zone.type === 'BULLISH_IOB'"
+              [class.bearish]="zone.type === 'BEARISH_IOB'"
+              (click)="selectOnlyZone(zone.id)"
+              matTooltip="Click to show only this zone">
+          {{ zone.type === 'BULLISH_IOB' ? '🟢' : '🔴' }}
+        </span>
+        <span class="zone-range" (click)="selectOnlyZone(zone.id)" matTooltip="Click to show only this zone">
+          {{ zone.zoneLow | number:'1.2-2' }} - {{ zone.zoneHigh | number:'1.2-2' }}
+        </span>
+        <mat-chip class="confidence-chip" [class.high]="zone.confidence >= 75" [class.medium]="zone.confidence >= 50 && zone.confidence < 75">
+          {{ zone.confidence | number:'1.0-0' }}%
+        </mat-chip>
+        <span class="zone-direction" [class.long]="zone.direction === 'LONG'" [class.short]="zone.direction === 'SHORT'">
+          {{ zone.direction }}
+        </span>
+        <mat-chip *ngIf="zone.hasFvg" class="fvg-chip">FVG</mat-chip>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart Info -->
+  <div class="chart-info">
+    <div class="info-item">
+      <mat-icon>candlestick_chart</mat-icon>
+      <span>{{ chartData?.candles?.length || 0 }} candles</span>
+    </div>
+    <div class="info-item">
+      <mat-icon>layers</mat-icon>
+      <span>{{ chartData?.iobZones?.length || 0 }} zones</span>
+    </div>
+    <div class="info-item" *ngIf="chartData?.distanceToZone?.hasNearbyZone">
+      <mat-icon>straighten</mat-icon>
+      <span>Distance to zone: {{ chartData?.distanceToZone?.distancePoints | number:'1.2-2' }} pts</span>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,266 @@
+<div class="auto-trading-config">
+  <!-- Header with Status -->
+  <div class="config-header">
+    <div class="header-left">
+      <h2>🤖 Auto Trading Configuration</h2>
+      <div class="status-indicators" *ngIf="status">
+        <mat-chip [class.enabled]="status.isEnabled" [class.disabled]="!status.isEnabled">
+          {{ status.isEnabled ? '🟢 Active' : '🔴 Inactive' }}
+        </mat-chip>
+        <mat-chip *ngIf="status.paperTradingMode" class="paper-mode">
+          📝 Paper Trading
+        </mat-chip>
+      </div>
+    </div>
+    <div class="header-right">
+      <button mat-raised-button color="primary" (click)="saveConfig()" [disabled]="isLoading">
+        <mat-icon>save</mat-icon> Save Configuration
+      </button>
+    </div>
+  </div>
+
+  <div class="config-content">
+    <!-- Main Toggle -->
+    <mat-card class="main-toggle-card">
+      <mat-card-content>
+        <div class="toggle-row main-toggle">
+          <div class="toggle-info">
+            <span class="toggle-label">Auto Trading</span>
+            <span class="toggle-description">Enable automated trade execution based on IOB signals</span>
+          </div>
+          <mat-slide-toggle
+            [(ngModel)]="config.autoTradingEnabled"
+            (change)="toggleAutoTrading()"
+            color="primary">
+          </mat-slide-toggle>
+        </div>
+        <mat-divider></mat-divider>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label">Paper Trading Mode</span>
+            <span class="toggle-description">Simulate trades without placing real orders</span>
+          </div>
+          <mat-slide-toggle [(ngModel)]="config.paperTradingMode" color="warn">
+          </mat-slide-toggle>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Configuration Sections -->
+    <mat-accordion>
+      <!-- Entry Settings -->
+      <mat-expansion-panel expanded>
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon>login</mat-icon>
+            Entry Settings
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+        <div class="settings-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Entry Type</mat-label>
+            <mat-select [(ngModel)]="config.entryType">
+              <mat-option *ngFor="let type of entryTypes; trackBy: trackByValue" [value]="type.value">
+                {{ type.label }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Min Confidence (%)</mat-label>
+            <input matInput type="number" [(ngModel)]="config.minConfidence" min="50" max="100">
+          </mat-form-field>
+
+          <div class="toggle-field">
+            <mat-slide-toggle [(ngModel)]="config.requireFvg">Require FVG Confluence</mat-slide-toggle>
+          </div>
+
+          <div class="toggle-field">
+            <mat-slide-toggle [(ngModel)]="config.requireTrendAlignment">Require Trend Alignment</mat-slide-toggle>
+          </div>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Trade Start Time</mat-label>
+            <input matInput type="text" [(ngModel)]="config.tradeStartTime" placeholder="09:20">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Trade End Time</mat-label>
+            <input matInput type="text" [(ngModel)]="config.tradeEndTime" placeholder="15:00">
+          </mat-form-field>
+        </div>
+      </mat-expansion-panel>
+
+      <!-- Risk Settings -->
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon>shield</mat-icon>
+            Risk Management
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+        <div class="settings-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Max Position Size</mat-label>
+            <input matInput type="number" [(ngModel)]="config.maxPositionSize">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Max Open Positions</mat-label>
+            <input matInput type="number" [(ngModel)]="config.maxOpenPositions">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Max Daily Trades</mat-label>
+            <input matInput type="number" [(ngModel)]="config.maxDailyTrades">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Max Daily Loss (₹)</mat-label>
+            <input matInput type="number" [(ngModel)]="config.maxDailyLoss">
+          </mat-form-field>
+
+          <div class="toggle-field">
+            <mat-slide-toggle [(ngModel)]="config.useDynamicSL">Use ATR-based Dynamic SL</mat-slide-toggle>
+          </div>
+
+          <mat-form-field appearance="outline" *ngIf="config.useDynamicSL">
+            <mat-label>ATR SL Multiplier</mat-label>
+            <input matInput type="number" [(ngModel)]="config.slAtrMultiplier" step="0.1">
+          </mat-form-field>
+        </div>
+      </mat-expansion-panel>
+
+      <!-- Position Management -->
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon>tune</mat-icon>
+            Position Management
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+        <div class="settings-grid">
+          <div class="toggle-field">
+            <mat-slide-toggle [(ngModel)]="config.enableTrailingSL">Enable Trailing Stop Loss</mat-slide-toggle>
+          </div>
+
+          <mat-form-field appearance="outline" *ngIf="config.enableTrailingSL">
+            <mat-label>Trail Trigger</mat-label>
+            <mat-select [(ngModel)]="config.trailingSLTrigger">
+              <mat-option *ngFor="let trigger of trailTriggers; trackBy: trackByValue" [value]="trigger.value">
+                {{ trigger.label }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" *ngIf="config.enableTrailingSL && config.trailingSLTrigger === 'POINTS'">
+            <mat-label>Trail Distance (Points)</mat-label>
+            <input matInput type="number" [(ngModel)]="config.trailingSLDistancePoints">
+          </mat-form-field>
+
+          <div class="toggle-field">
+            <mat-slide-toggle [(ngModel)]="config.bookPartialProfits">Book Partial Profits</mat-slide-toggle>
+          </div>
+
+          <mat-form-field appearance="outline" *ngIf="config.bookPartialProfits">
+            <mat-label>Partial Exit (%)</mat-label>
+            <input matInput type="number" [(ngModel)]="config.partialProfitPercent" min="10" max="90">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Default Exit Target</mat-label>
+            <mat-select [(ngModel)]="config.defaultExitTarget">
+              <mat-option *ngFor="let target of exitTargets; trackBy: trackByValue" [value]="target.value">
+                {{ target.label }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <div class="toggle-field">
+            <mat-slide-toggle [(ngModel)]="config.exitAtMarketClose">Exit at Market Close</mat-slide-toggle>
+          </div>
+        </div>
+      </mat-expansion-panel>
+    </mat-accordion>
+
+    <!-- Open Positions -->
+    <mat-card class="positions-card" *ngIf="openPositions.length > 0">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>account_balance_wallet</mat-icon>
+          Open Positions ({{ openPositions.length }})
+        </mat-card-title>
+        <button mat-button color="warn" (click)="closeAllPositions()">Close All</button>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="positions-list">
+          <div class="position-item" *ngFor="let pos of openPositions; trackBy: trackByPosition">
+            <div class="position-info">
+              <span class="instrument">{{ pos.instrumentName }}</span>
+              <span [class]="getDirectionClass(pos.direction)">{{ pos.direction }}</span>
+              <span>Entry: {{ pos.entryPrice | number:'1.2-2' }}</span>
+              <span>Qty: {{ pos.quantity }}</span>
+              <span>SL: {{ pos.stopLoss | number:'1.2-2' }}</span>
+              <span [class]="getPnlClass(calculateUnrealizedPnl(pos))">
+                P&L: {{ formatCurrency(calculateUnrealizedPnl(pos)) }}
+              </span>
+            </div>
+            <div class="position-actions">
+              <button mat-icon-button matTooltip="Update Trailing SL" (click)="updateTrailingStop(pos)">
+                <mat-icon>trending_up</mat-icon>
+              </button>
+              <button mat-icon-button matTooltip="Close Position" color="warn" (click)="closePosition(pos)">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Pending Orders -->
+    <mat-card class="orders-card" *ngIf="pendingOrders.length > 0">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>pending</mat-icon>
+          Pending Orders ({{ pendingOrders.length }})
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="orders-list">
+          <div class="order-item" *ngFor="let order of pendingOrders; trackBy: trackByOrder">
+            <span>{{ order.instrumentName }}</span>
+            <span>{{ order.transactionType }}</span>
+            <span>{{ order.quantity }} &#64; {{ order.price | number:'1.2-2' }}</span>
+            <mat-chip>{{ order.status }}</mat-chip>
+            <button mat-icon-button matTooltip="Cancel" color="warn" (click)="cancelOrder(order.orderId)">
+              <mat-icon>cancel</mat-icon>
+            </button>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Activity Log -->
+    <mat-card class="activity-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>history</mat-icon>
+          Recent Activity
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="activity-list" *ngIf="activityLog.length > 0; else noActivity">
+          <div class="activity-item" *ngFor="let item of activityLog; trackBy: trackByActivity">
+            <span class="activity-time">{{ formatTime(item.timestamp) }}</span>
+            <span class="activity-type">{{ item.type }}</span>
+            <span class="activity-message">{{ item.message }}</span>
+          </div>
+        </div>
+        <ng-template #noActivity>
+          <p class="no-data">No recent activity</p>
+        </ng-template>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

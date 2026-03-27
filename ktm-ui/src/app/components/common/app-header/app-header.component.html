@@ -1,0 +1,42 @@
+<div class="row" style="height:80px; background-color: #c0e2f1; padding: 20px;">
+    <div class="col-sm-1">
+        <img src="ktmlogo.png" style="height: 50px; width: 80px;">
+   </div>
+    <div class="col-sm-2">
+         <button class="btn btn-primary" (click)="clearLocalStorage()">Clear Local Storage</button>
+    </div>
+    <div class="col-sm-2">
+        <button class="btn btn-primary" (click)="login()">Login</button>
+   </div>
+   <div class="col-sm-7" *ngIf="commonMessageText">
+     <div *ngIf="commonMessageText" class = "alert" [ngClass]="{'alert-success': commonMessageType === 'success', 'alert-danger': commonMessageType === 'error', 'alert-warning': commonMessageType === 'warning'}" role="alert">
+          {{ commonMessageText }}
+        </div>
+     </div>
+   
+</div>
+
+<div class="row" style="height:80px; background-color: #c0e2f1; padding: 20px;">
+     <div class="col-sm-1">
+          <button class="btn btn-primary" (click)="startTicker()" [disabled]="this.isTickerConnStarted==true">@if(!this.isTickerConnStarted){Start Ticker} @else {Connected}</button>
+        </div>
+     <div class="col-sm-1">
+           <button class="btn btn-primary" (click)="stopTicker()" [disabled]="this.isTickerConnStarted==false">@if(this.isTickerConnStarted){Stop Ticker} @else {Disconnected}</button>
+     </div>
+      <div class="col-sm-1">
+            <button class="btn btn-primary" id="takeOISnapshot" (click)="takeOISnapshot(-1)" [disabled]="this.isTickerConnStarted==false">OI Snapshot</button>
+     </div>
+
+     <div class="col-sm-2">
+            <button class="btn btn-primary" id="uploadOISnapshot" (click)="triggerFileInput()" [disabled]="this.isTickerConnStarted==true">UploadOI Snapshot</button>
+            <input type="file" id="uploadOIFile" accept=".json" style="display: none;" (change)="onFileSelected($event)">
+     </div>
+     
+     <div class="col-sm-1">
+            <button class="btn btn-primary" id="startAllJobs" (click)="startJob(-1)" [disabled]="this.isTickerConnStarted==false || this.isJobRunning==true">Start All Jobs</button>
+     </div>
+     <div class="col-sm-1">
+            <button class="btn btn-primary" id="stopAllJobs" (click)="stopJob(-1)" [disabled]="this.isJobRunning==false">Stop All Jobs</button>
+     </div>
+     
+</div>

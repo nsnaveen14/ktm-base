@@ -1,0 +1,479 @@
+<div class="performance-dashboard">
+  <!-- Loading Spinner -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Loading performance data...</p>
+  </div>
+
+  <!-- Header -->
+  <div class="dashboard-header">
+    <h1>📊 Performance Dashboard</h1>
+    <div class="header-actions">
+      <button mat-raised-button color="primary" (click)="loadDashboard()">
+        <mat-icon>refresh</mat-icon> Refresh
+      </button>
+      <button mat-raised-button (click)="recalculateMetrics()">
+        <mat-icon>calculate</mat-icon> Recalculate Metrics
+      </button>
+    </div>
+  </div>
+
+  <mat-tab-group>
+    <!-- Overview Tab -->
+    <mat-tab label="Overview">
+      <div class="tab-content">
+        <!-- Quick Stats Cards -->
+        <div class="stats-grid" *ngIf="dashboard?.quickStats">
+          <mat-card class="stat-card">
+            <mat-card-header>
+              <mat-card-title>Total Trades</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="stat-value">{{ dashboard?.quickStats?.totalTrades }}</div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card class="stat-card">
+            <mat-card-header>
+              <mat-card-title>Win Rate</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="stat-value" [class.positive]="(dashboard?.quickStats?.winRate ?? 0) >= 50">
+                {{ formatPercent(dashboard?.quickStats?.winRate ?? 0) }}
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card class="stat-card">
+            <mat-card-header>
+              <mat-card-title>Total P&L</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="stat-value" [class]="getPnlClass(dashboard?.quickStats?.totalPnl ?? 0)">
+                {{ formatCurrency(dashboard?.quickStats?.totalPnl ?? 0) }}
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card class="stat-card">
+            <mat-card-header>
+              <mat-card-title>Profit Factor</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="stat-value" [class.positive]="(dashboard?.quickStats?.profitFactor ?? 0) > 1">
+                {{ formatNumber(dashboard?.quickStats?.profitFactor ?? 0) }}
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card class="stat-card">
+            <mat-card-header>
+              <mat-card-title>Expectancy</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="stat-value" [class]="getPnlClass(dashboard?.quickStats?.expectancy ?? 0)">
+                {{ formatCurrency(dashboard?.quickStats?.expectancy ?? 0) }}
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card class="stat-card">
+            <mat-card-header>
+              <mat-card-title>Max Drawdown</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="stat-value negative">
+                {{ formatCurrency(dashboard?.quickStats?.maxDrawdown ?? 0) }}
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+
+        <!-- Detailed Metrics -->
+        <mat-card class="metrics-card" *ngIf="allTimeMetrics">
+          <mat-card-header>
+            <mat-card-title>📈 All-Time Performance Metrics</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="metrics-grid">
+              <div class="metric-group">
+                <h4>Trade Statistics</h4>
+                <div class="metric-row">
+                  <span>Winning Trades:</span>
+                  <span class="positive">{{ allTimeMetrics.winningTrades }}</span>
+                </div>
+                <div class="metric-row">
+                  <span>Losing Trades:</span>
+                  <span class="negative">{{ allTimeMetrics.losingTrades }}</span>
+                </div>
+                <div class="metric-row">
+                  <span>Breakeven:</span>
+                  <span>{{ allTimeMetrics.breakevenTrades }}</span>
+                </div>
+                <div class="metric-row">
+                  <span>Avg Win:</span>
+                  <span class="positive">{{ formatCurrency(allTimeMetrics.avgWinAmount) }}</span>
+                </div>
+                <div class="metric-row">
+                  <span>Avg Loss:</span>
+                  <span class="negative">{{ formatCurrency(allTimeMetrics.avgLossAmount) }}</span>
+                </div>
+              </div>
+
+              <div class="metric-group">
+                <h4>Risk Metrics</h4>
+                <div class="metric-row">
+                  <span>Planned RR:</span>
+                  <span>{{ formatNumber(allTimeMetrics.avgRRPlanned) }}</span>
+                </div>
+                <div class="metric-row">
+                  <span>Achieved RR:</span>
+                  <span>{{ formatNumber(allTimeMetrics.avgRRAchieved) }}</span>
+                </div>
+                <div class="metric-row">
+                  <span>Win/Loss Ratio:</span>
+                  <span>{{ formatNumber(allTimeMetrics.winLossRatio) }}</span>
+                </div>
+                <div class="metric-row">
+                  <span>Max Win Streak:</span>
+                  <span class="positive">{{ allTimeMetrics.maxWinStreak }}</span>
+                </div>
+                <div class="metric-row">
+                  <span>Max Loss Streak:</span>
+                  <span class="negative">{{ allTimeMetrics.maxLossStreak }}</span>
+                </div>
+              </div>
+
+              <div class="metric-group">
+                <h4>Target Hit Rates</h4>
+                <div class="metric-row">
+                  <span>Target 1 Hit Rate:</span>
+                  <span>{{ formatPercent(allTimeMetrics.target1HitRate) }}</span>
+                </div>
+                <div class="metric-row">
+                  <span>Target 2 Hit Rate:</span>
+                  <span>{{ formatPercent(allTimeMetrics.target2HitRate) }}</span>
+                </div>
+                <div class="metric-row">
+                  <span>Target 3 Hit Rate:</span>
+                  <span>{{ formatPercent(allTimeMetrics.target3HitRate) }}</span>
+                </div>
+                <div class="metric-row">
+                  <span>Avg Duration:</span>
+                  <span>{{ formatDuration(allTimeMetrics.avgTradeDurationMinutes) }}</span>
+                </div>
+              </div>
+
+              <div class="metric-group">
+                <h4>IOB Analysis</h4>
+                <div class="metric-row">
+                  <span>Bullish Win Rate:</span>
+                  <span>{{ formatPercent(allTimeMetrics.bullishWinRate) }}</span>
+                </div>
+                <div class="metric-row">
+                  <span>Bearish Win Rate:</span>
+                  <span>{{ formatPercent(allTimeMetrics.bearishWinRate) }}</span>
+                </div>
+                <div class="metric-row">
+                  <span>FVG Win Rate:</span>
+                  <span>{{ formatPercent(allTimeMetrics.fvgConfluenceWinRate) }}</span>
+                </div>
+                <div class="metric-row">
+                  <span>Trend Aligned Win:</span>
+                  <span>{{ formatPercent(allTimeMetrics.trendAlignedWinRate) }}</span>
+                </div>
+                <div class="metric-row">
+                  <span>High Conf Win:</span>
+                  <span>{{ formatPercent(allTimeMetrics.highConfidenceWinRate) }}</span>
+                </div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Recent Trades Tab -->
+    <mat-tab label="Recent Trades">
+      <div class="tab-content">
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>📋 Recent Closed Trades</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <table mat-table [dataSource]="recentTrades" class="trades-table">
+              <ng-container matColumnDef="tradeId">
+                <th mat-header-cell *matHeaderCellDef>Trade ID</th>
+                <td mat-cell *matCellDef="let trade">{{ trade.tradeId | slice:0:15 }}...</td>
+              </ng-container>
+
+              <ng-container matColumnDef="instrumentName">
+                <th mat-header-cell *matHeaderCellDef>Instrument</th>
+                <td mat-cell *matCellDef="let trade">{{ trade.instrumentName }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="direction">
+                <th mat-header-cell *matHeaderCellDef>Direction</th>
+                <td mat-cell *matCellDef="let trade">
+                  <span [class]="getDirectionClass(trade.tradeDirection)">
+                    {{ trade.tradeDirection }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="entryPrice">
+                <th mat-header-cell *matHeaderCellDef>Entry</th>
+                <td mat-cell *matCellDef="let trade">{{ formatNumber(trade.entryPrice) }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="exitPrice">
+                <th mat-header-cell *matHeaderCellDef>Exit</th>
+                <td mat-cell *matCellDef="let trade">{{ formatNumber(trade.exitPrice) }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="netPnl">
+                <th mat-header-cell *matHeaderCellDef>Net P&L</th>
+                <td mat-cell *matCellDef="let trade" [class]="getPnlClass(trade.netPnl)">
+                  {{ formatCurrency(trade.netPnl) }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="pnlPercent">
+                <th mat-header-cell *matHeaderCellDef>P&L %</th>
+                <td mat-cell *matCellDef="let trade" [class]="getPnlClass(trade.pnlPercent)">
+                  {{ formatPercent(trade.pnlPercent) }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="outcome">
+                <th mat-header-cell *matHeaderCellDef>Outcome</th>
+                <td mat-cell *matCellDef="let trade">
+                  <mat-chip [class]="getOutcomeClass(trade.outcome)">
+                    {{ trade.outcome }}
+                  </mat-chip>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="exitReason">
+                <th mat-header-cell *matHeaderCellDef>Exit Reason</th>
+                <td mat-cell *matCellDef="let trade">{{ trade.exitReason }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="duration">
+                <th mat-header-cell *matHeaderCellDef>Duration</th>
+                <td mat-cell *matCellDef="let trade">{{ formatDuration(trade.durationMinutes) }}</td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="tradeColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: tradeColumns;"></tr>
+            </table>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Open Trades -->
+        <mat-card *ngIf="openTrades.length > 0">
+          <mat-card-header>
+            <mat-card-title>🔓 Open Trades</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="open-trades-list">
+              <div class="open-trade" *ngFor="let trade of openTrades">
+                <div class="trade-info">
+                  <span class="trade-instrument">{{ trade.instrumentName }}</span>
+                  <span [class]="getDirectionClass(trade.tradeDirection)">
+                    {{ trade.tradeDirection }}
+                  </span>
+                  <span>Entry: {{ formatNumber(trade.entryPrice) }}</span>
+                  <span>SL: {{ formatNumber(trade.stopLoss) }}</span>
+                </div>
+                <button mat-button color="warn" (click)="closeTrade(trade)">
+                  Close Trade
+                </button>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Backtest Tab -->
+    <mat-tab label="Backtest">
+      <div class="tab-content">
+        <mat-card class="backtest-form-card">
+          <mat-card-header>
+            <mat-card-title>🔬 Run Backtest</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="backtest-form">
+              <mat-form-field>
+                <mat-label>Instrument</mat-label>
+                <mat-select [(ngModel)]="backtestInstrument">
+                  <mat-option [value]="256265">NIFTY</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field>
+                <mat-label>Start Date</mat-label>
+                <input matInput [matDatepicker]="startPicker" [(ngModel)]="backtestStartDate">
+                <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+                <mat-datepicker #startPicker></mat-datepicker>
+              </mat-form-field>
+
+              <mat-form-field>
+                <mat-label>End Date</mat-label>
+                <input matInput [matDatepicker]="endPicker" [(ngModel)]="backtestEndDate">
+                <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+                <mat-datepicker #endPicker></mat-datepicker>
+              </mat-form-field>
+
+              <button mat-raised-button color="primary"
+                      (click)="runBacktest()"
+                      [disabled]="isRunningBacktest">
+                <mat-icon *ngIf="!isRunningBacktest">play_arrow</mat-icon>
+                <mat-spinner *ngIf="isRunningBacktest" diameter="20"></mat-spinner>
+                {{ isRunningBacktest ? 'Running...' : 'Run Backtest' }}
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Backtest Results -->
+        <mat-card *ngIf="backtestResult" class="backtest-results">
+          <mat-card-header>
+            <mat-card-title>📊 Backtest Results</mat-card-title>
+            <mat-card-subtitle>{{ backtestResult.backtestId }}</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="backtest-stats-grid">
+              <div class="stat-item">
+                <span class="label">Total Trades</span>
+                <span class="value">{{ backtestResult.performance?.totalTrades }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="label">Win Rate</span>
+                <span class="value">{{ formatPercent(backtestResult.performance?.winRate) }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="label">Total P&L</span>
+                <span class="value" [class]="getPnlClass(backtestResult.performance?.totalNetPnl)">
+                  {{ formatCurrency(backtestResult.performance?.totalNetPnl) }}
+                </span>
+              </div>
+              <div class="stat-item">
+                <span class="label">Profit Factor</span>
+                <span class="value">{{ formatNumber(backtestResult.performance?.profitFactor) }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="label">Max Drawdown</span>
+                <span class="value negative">{{ formatPercent(backtestResult.performance?.maxDrawdownPercent) }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="label">Expectancy</span>
+                <span class="value">{{ formatCurrency(backtestResult.performance?.expectancy) }}</span>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Backtest History -->
+        <mat-card *ngIf="backtestHistory.length > 0">
+          <mat-card-header>
+            <mat-card-title>📜 Backtest History</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="backtest-history-list">
+              <div class="history-item" *ngFor="let bt of backtestHistory"
+                   (click)="viewBacktestResult(bt.backtestId)">
+                <span class="bt-id">{{ bt.backtestId | slice:0:20 }}...</span>
+                <span>Trades: {{ bt.totalTrades }}</span>
+                <span>Win Rate: {{ formatPercent(bt.winRate) }}</span>
+                <span [class]="getPnlClass(bt.totalPnl)">P&L: {{ formatCurrency(bt.totalPnl) }}</span>
+                <mat-chip>{{ bt.status }}</mat-chip>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Analysis Tab -->
+    <mat-tab label="Analysis">
+      <div class="tab-content">
+        <div class="analysis-grid">
+          <!-- Performance by IOB Type -->
+          <mat-card *ngIf="performanceByIOBType">
+            <mat-card-header>
+              <mat-card-title>🎯 By IOB Type</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="analysis-comparison">
+                <div class="comparison-item bullish">
+                  <h4>Bullish IOBs</h4>
+                  <p>Count: {{ performanceByIOBType.bullish?.count || 0 }}</p>
+                  <p>Win Rate: {{ formatPercent(performanceByIOBType.bullish?.winRate) }}</p>
+                  <p>Avg P&L: {{ formatCurrency(performanceByIOBType.bullish?.avgPnl) }}</p>
+                </div>
+                <div class="comparison-item bearish">
+                  <h4>Bearish IOBs</h4>
+                  <p>Count: {{ performanceByIOBType.bearish?.count || 0 }}</p>
+                  <p>Win Rate: {{ formatPercent(performanceByIOBType.bearish?.winRate) }}</p>
+                  <p>Avg P&L: {{ formatCurrency(performanceByIOBType.bearish?.avgPnl) }}</p>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Performance by Confidence -->
+          <mat-card *ngIf="performanceByConfidence">
+            <mat-card-header>
+              <mat-card-title>📊 By Confidence Level</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="analysis-comparison">
+                <div class="comparison-item high-conf">
+                  <h4>High Confidence (>75%)</h4>
+                  <p>Count: {{ performanceByConfidence.highConfidence?.count || 0 }}</p>
+                  <p>Win Rate: {{ formatPercent(performanceByConfidence.highConfidence?.winRate) }}</p>
+                  <p>Avg P&L: {{ formatCurrency(performanceByConfidence.highConfidence?.avgPnl) }}</p>
+                </div>
+                <div class="comparison-item low-conf">
+                  <h4>Low Confidence (≤75%)</h4>
+                  <p>Count: {{ performanceByConfidence.lowConfidence?.count || 0 }}</p>
+                  <p>Win Rate: {{ formatPercent(performanceByConfidence.lowConfidence?.winRate) }}</p>
+                  <p>Avg P&L: {{ formatCurrency(performanceByConfidence.lowConfidence?.avgPnl) }}</p>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Drawdown Analysis -->
+          <mat-card *ngIf="drawdownAnalysis">
+            <mat-card-header>
+              <mat-card-title>📉 Drawdown Analysis</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="drawdown-stats">
+                <div class="dd-item">
+                  <span>Max Drawdown:</span>
+                  <span class="negative">{{ formatCurrency(drawdownAnalysis.maxDrawdown) }}</span>
+                </div>
+                <div class="dd-item">
+                  <span>Max DD %:</span>
+                  <span class="negative">{{ formatPercent(drawdownAnalysis.maxDrawdownPercent) }}</span>
+                </div>
+                <div class="dd-item">
+                  <span>Current Drawdown:</span>
+                  <span class="negative">{{ formatCurrency(drawdownAnalysis.currentDrawdown) }}</span>
+                </div>
+                <div class="dd-item">
+                  <span>Peak Equity:</span>
+                  <span class="positive">{{ formatCurrency(drawdownAnalysis.peakEquity) }}</span>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>

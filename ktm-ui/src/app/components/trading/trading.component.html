@@ -1,0 +1,432 @@
+<div class="trading-container">
+  <!-- Header -->
+  <div class="trading-header">
+    <div class="header-left">
+      <h4>
+        <mat-icon>swap_horiz</mat-icon>
+        Simulated Options Trading
+      </h4>
+      <mat-chip [ngClass]="isAutoTradingEnabled ? 'auto-on' : 'auto-off'">
+        <mat-icon>{{isAutoTradingEnabled ? 'autorenew' : 'pause'}}</mat-icon>
+        Auto: {{isAutoTradingEnabled ? 'ON' : 'OFF'}}
+      </mat-chip>
+    </div>
+
+    <div class="header-middle">
+      <app-live-tick></app-live-tick>
+    </div>
+
+    <div class="header-right">
+      <button mat-raised-button color="primary" (click)="refreshAll()" [disabled]="isLoading">
+        <mat-icon>refresh</mat-icon> Refresh
+      </button>
+      <mat-slide-toggle
+        [checked]="isAutoTradingEnabled"
+        (change)="toggleAutoTrading()"
+        [disabled]="isLoading"
+        color="primary">
+        Auto Trading
+      </mat-slide-toggle>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-cards">
+    <mat-card class="summary-card pnl-card" [ngClass]="getPnlClass(tradingSummary?.netPnl)">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>account_balance_wallet</mat-icon>
+        <mat-card-title>Today's P&L</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="big-number" [ngClass]="getPnlClass(tradingSummary?.netPnl)">
+          {{formatCurrency(tradingSummary?.netPnl)}}
+        </span>
+        <span class="sub-text" *ngIf="tradingSummary?.unrealizedPnl">
+          Unrealized: {{formatCurrency(tradingSummary?.unrealizedPnl)}}
+        </span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>bar_chart</mat-icon>
+        <mat-card-title>Trades</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="big-number">{{tradingSummary?.totalTrades || 0}}</span>
+        <span class="sub-text">
+          Open: {{tradingSummary?.openTrades || 0}} | Closed: {{tradingSummary?.closedTrades || 0}}
+        </span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>trending_up</mat-icon>
+        <mat-card-title>Win Rate</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="big-number">{{formatPercent(tradingSummary?.winRate)}}</span>
+        <span class="sub-text">
+          W: {{tradingSummary?.winningTrades || 0}} | L: {{tradingSummary?.losingTrades || 0}}
+        </span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card signal-card" *ngIf="currentSignal">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>sensors</mat-icon>
+        <mat-card-title>Current Signal</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="signal-text" *ngIf="currentSignal.hasSignal" [ngClass]="getSignalClass(currentSignal.signalType)">
+          {{currentSignal.signalType}} ({{currentSignal.signalStrength}})
+        </span>
+        <span class="signal-text neutral" *ngIf="!currentSignal.hasSignal">
+          No Signal
+        </span>
+        <span class="sub-text">{{currentSignal.reason || currentSignal.signalSource}}</span>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Manual Trading Controls -->
+  <mat-card class="controls-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>gamepad</mat-icon>
+        Trading Controls
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="controls-row">
+        <button mat-raised-button class="buy-btn" (click)="manualBuy()" [disabled]="isLoading || openTrades.length > 0">
+          <mat-icon>arrow_upward</mat-icon> BUY CE
+        </button>
+        <button mat-raised-button class="sell-btn" (click)="manualSell()" [disabled]="isLoading || openTrades.length > 0">
+          <mat-icon>arrow_downward</mat-icon> SELL (BUY PE)
+        </button>
+        <button mat-stroked-button color="primary" (click)="triggerAutoTrade()" [disabled]="isLoading || openTrades.length > 0">
+          <mat-icon>auto_awesome</mat-icon> Auto Trade Now
+        </button>
+        <button mat-stroked-button color="warn" (click)="exitAllTrades()" [disabled]="isLoading || openTrades.length === 0">
+          <mat-icon>close_all</mat-icon> Exit All
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Open Positions -->
+  <mat-card class="positions-card" *ngIf="openTrades.length > 0">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>open_in_browser</mat-icon>
+        Open Positions ({{openTrades.length}})
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <table class="trades-table">
+        <thead>
+          <tr>
+            <th>Trade ID</th>
+            <th>Entry Time</th>
+            <th>Type</th>
+            <th>Strike</th>
+            <th>Entry</th>
+            <th>Target</th>
+            <th>Stop Loss</th>
+            <th>Qty</th>
+            <th>Signal</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let trade of openTrades">
+            <td class="trade-id">{{trade.tradeId}}</td>
+            <td class="entry-time">{{formatTime(trade.entryTime)}}</td>
+            <td>
+              <mat-chip [ngClass]="trade.optionType === 'CE' ? 'ce-chip' : 'pe-chip'">
+                {{trade.optionType}}
+              </mat-chip>
+            </td>
+            <td>{{trade.strikePrice}}</td>
+            <td>{{formatNumber(trade.entryPrice)}}</td>
+            <td class="positive">{{formatNumber(trade.targetPrice)}}</td>
+            <td class="negative">{{formatNumber(trade.stopLossPrice)}}</td>
+            <td>{{trade.quantity}}</td>
+            <td>
+              <span [ngClass]="getSignalClass(trade.signalType)">
+                {{trade.signalType}} ({{trade.signalSource}})
+              </span>
+            </td>
+            <td>
+              <button mat-icon-button color="warn" (click)="exitTrade(trade)" matTooltip="Exit Trade">
+                <mat-icon>exit_to_app</mat-icon>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Today's Trades History (now inside expansion panel with multi-select discard) -->
+  <mat-expansion-panel class="history-card" [expanded]="todaysTradesExpanded">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <mat-icon>history</mat-icon>
+        Today's Trades
+      </mat-panel-title>
+      <mat-panel-description>
+        <button mat-stroked-button color="warn" (click)="discardSelectedTrades()" [disabled]="selectedTodaysTradeIds.size === 0 || isLoading">
+          <mat-icon>delete_sweep</mat-icon> Discard Selected
+        </button>
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+
+    <mat-card-content>
+      <div *ngIf="todaysTrades.length > 0; else noTradesBlock">
+        <div class="table-actions">
+          <mat-checkbox [(ngModel)]="selectAllTodayTrades" (change)="toggleSelectAllTodayTrades($event.checked)">Select All</mat-checkbox>
+        </div>
+        <table class="trades-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Time</th>
+              <th>Trade ID</th>
+              <th>Type</th>
+              <th>Option</th>
+              <th>Entry</th>
+              <th>SL</th>
+              <th>Target</th>
+              <th>Exit</th>
+              <th>Exit Time</th>
+              <th>P&L</th>
+              <th>Signal</th>
+              <th>Exit Reason</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let trade of todaysTrades" [ngClass]="getStatusClass(trade.status)">
+              <td>
+                <mat-checkbox [checked]="selectedTodaysTradeIds.has(trade.tradeId)" (change)="toggleSelectTrade(trade.tradeId, $event.checked)"></mat-checkbox>
+              </td>
+              <td>{{formatTime(trade.entryTime)}}</td>
+              <td class="trade-id">{{trade.tradeId}}</td>
+              <td>
+                <mat-chip [ngClass]="getSignalClass(trade.signalType)" class="small-chip">
+                  {{trade.signalType}}
+                </mat-chip>
+              </td>
+              <td>{{trade.optionType}} {{trade.strikePrice}}</td>
+              <td>{{formatNumber(trade.entryPrice)}}</td>
+              <td class="sl-value">{{trade.stopLossPrice ? formatNumber(trade.stopLossPrice) : '-'}}</td>
+              <td class="target-value">{{trade.targetPrice ? formatNumber(trade.targetPrice) : '-'}}</td>
+              <td class="exit-value">{{trade.exitPrice ? formatNumber(trade.exitPrice) : '-'}}</td>
+              <td>{{trade.exitTime ? formatTime(trade.exitTime) : '-'}}</td>
+              <td [ngClass]="getPnlClass(trade.netPnl)">
+                {{trade.netPnl !== undefined && trade.netPnl !== null ? formatCurrency(trade.netPnl) : '-'}}
+              </td>
+               <td>
+              <span [ngClass]="getSignalClass(trade.signalType)">
+                {{trade.signalType}} ({{trade.signalSource}})
+              </span>
+            </td>
+              <td>
+                <mat-icon *ngIf="trade.exitReason" [matTooltip]="trade.exitReason">
+                  {{getExitReasonIcon(trade.exitReason)}}
+                </mat-icon>
+                {{trade.exitReason || '-'}}
+              </td>
+              <td>
+                <mat-chip [ngClass]="getStatusClass(trade.status)" class="small-chip">
+                  {{trade.status}}
+                </mat-chip>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <ng-template #noTradesBlock>
+        <div class="no-data">No trades yet today</div>
+      </ng-template>
+    </mat-card-content>
+  </mat-expansion-panel>
+
+  <!-- Configuration Panel -->
+  <mat-expansion-panel class="config-panel">
+    <mat-expansion-panel-header>
+      <mat-panel-title class="config-panel-title">
+        <mat-icon>settings</mat-icon>
+        Trading Configuration
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+
+    <div class="config-content" *ngIf="tradingConfig && !isEditingConfig">
+      <div class="config-grid">
+        <div class="config-item">
+          <label>Number of Lots</label>
+          <span>{{tradingConfig.numLots}}</span>
+        </div>
+        <div class="config-item">
+          <label>Quantity</label>
+          <span>{{tradingConfig.quantity}} units</span>
+        </div>
+        <div class="config-item">
+          <label>Target %</label>
+          <span>{{tradingConfig.targetPercent}}%</span>
+        </div>
+        <div class="config-item">
+          <label>Stop Loss %</label>
+          <span>{{tradingConfig.stoplossPercent}}%</span>
+        </div>
+        <div class="config-item">
+          <label>Max Daily Loss</label>
+          <span>₹{{tradingConfig.maxDailyLoss}}</span>
+        </div>
+        <div class="config-item">
+          <label>Max Daily Trades</label>
+          <span>{{tradingConfig.maxDailyTrades}}</span>
+        </div>
+        <div class="config-item">
+          <label>Trailing Activation %</label>
+          <span>{{tradingConfig.trailingActivationThresholdPercent}}%</span>
+        </div>
+        <div class="config-item">
+          <label>Trailing Trail % of Profit</label>
+          <span>{{tradingConfig.trailingTrailPercentOfProfit}}%</span>
+        </div>
+      </div>
+      <button mat-stroked-button color="primary" (click)="startEditConfig()">
+        <mat-icon>edit</mat-icon> Edit Configuration
+      </button>
+    </div>
+
+    <div class="config-edit" *ngIf="isEditingConfig">
+      <div class="config-grid">
+        <mat-form-field appearance="outline" class="config-input" floatLabel="always">
+          <mat-label>Number of Lots</mat-label>
+          <input matInput type="number" [(ngModel)]="editConfig.numLots">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="config-input" floatLabel="always">
+          <mat-label>Target %</mat-label>
+          <input matInput type="number" [(ngModel)]="editConfig.targetPercent">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="config-input" floatLabel="always">
+          <mat-label>Stop Loss %</mat-label>
+          <input matInput type="number" [(ngModel)]="editConfig.stoplossPercent">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="config-input" floatLabel="always">
+          <mat-label>Max Daily Loss</mat-label>
+          <input matInput type="number" [(ngModel)]="editConfig.maxDailyLoss">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="config-input" floatLabel="always">
+          <mat-label>Max Daily Trades</mat-label>
+          <input matInput type="number" [(ngModel)]="editConfig.maxDailyTrades">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="config-input" floatLabel="always">
+          <mat-label>Trailing Activation %</mat-label>
+          <input matInput type="number" [(ngModel)]="editConfig.trailingActivationThresholdPercent">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="config-input" floatLabel="always">
+          <mat-label>Trailing Trail % of Profit</mat-label>
+          <input matInput type="number" [(ngModel)]="editConfig.trailingTrailPercentOfProfit">
+        </mat-form-field>
+      </div>
+      <div class="config-actions">
+        <button mat-raised-button color="primary" (click)="saveConfig()" [disabled]="isLoading">
+          <mat-icon>save</mat-icon> Save
+        </button>
+        <button mat-stroked-button (click)="cancelEditConfig()">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </mat-expansion-panel>
+
+  <!-- Daily Ledger -->
+  <mat-expansion-panel class="ledger-panel" *ngIf="todaysLedger">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <mat-icon>receipt_long</mat-icon>
+        Daily Ledger
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+
+    <div class="ledger-content">
+      <div class="ledger-grid">
+        <div class="ledger-item">
+          <label>Gross P&L</label>
+          <span [ngClass]="getPnlClass(todaysLedger.grossPnl)">
+            {{formatCurrency(todaysLedger.grossPnl)}}
+          </span>
+        </div>
+        <div class="ledger-item">
+          <label>Brokerage</label>
+          <span class="negative">-₹{{formatNumber(todaysLedger.totalBrokerage)}}</span>
+        </div>
+        <div class="ledger-item">
+          <label>Net P&L</label>
+          <span [ngClass]="getPnlClass(todaysLedger.netPnl)">
+            {{formatCurrency(todaysLedger.netPnl)}}
+          </span>
+        </div>
+        <div class="ledger-item">
+          <label>Win Rate</label>
+          <span>{{formatPercent(todaysLedger.winRate)}}</span>
+        </div>
+      </div>
+
+      <mat-divider></mat-divider>
+
+      <div class="ledger-breakdown">
+        <h5>By Signal Source</h5>
+        <div class="breakdown-row">
+          <span>Trade Setup: {{todaysLedger.tradeSetupTrades}} trades</span>
+          <span [ngClass]="getPnlClass(todaysLedger.tradeSetupPnl)">
+            {{formatCurrency(todaysLedger.tradeSetupPnl)}}
+          </span>
+        </div>
+        <div class="breakdown-row">
+          <span>EMA Crossover: {{todaysLedger.emaCrossoverTrades}} trades</span>
+          <span [ngClass]="getPnlClass(todaysLedger.emaCrossoverPnl)">
+            {{formatCurrency(todaysLedger.emaCrossoverPnl)}}
+          </span>
+        </div>
+      </div>
+
+      <mat-divider></mat-divider>
+
+      <div class="ledger-breakdown">
+        <h5>Exit Reasons</h5>
+        <div class="breakdown-row">
+          <span><mat-icon>emoji_events</mat-icon> Target Hit</span>
+          <span>{{todaysLedger.targetHitCount}}</span>
+        </div>
+        <div class="breakdown-row">
+          <span><mat-icon>warning</mat-icon> Stop Loss Hit</span>
+          <span>{{todaysLedger.stoplossHitCount}}</span>
+        </div>
+        <div class="breakdown-row">
+          <span><mat-icon>trending_down</mat-icon> Trailing SL</span>
+          <span>{{todaysLedger.trailingSlCount}}</span>
+        </div>
+        <div class="breakdown-row">
+          <span><mat-icon>schedule</mat-icon> Time Exit</span>
+          <span>{{todaysLedger.timeExitCount}}</span>
+        </div>
+      </div>
+    </div>
+  </mat-expansion-panel>
+
+  <!-- Performance Analytics Section -->
+  <app-performance-charts></app-performance-charts>
+
+  <!-- Loading Spinner -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+</div>
+

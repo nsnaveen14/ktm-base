@@ -1,0 +1,37 @@
+<header>
+  <app-header></app-header>
+</header>
+<main class="main">
+
+    <mat-tab-group (selectedIndexChange)="onTabChange($event)" mat-stretch-tabs="false" mat-align-tabs="center">
+      <mat-tab label="Multi-Segments"><app-multi-segments></app-multi-segments></mat-tab>
+      <mat-tab label="Order Blocks">
+        <app-order-blocks-container></app-order-blocks-container>
+      </mat-tab>
+      <mat-tab label="Analytics">
+        <app-analytics></app-analytics>
+      </mat-tab>
+      <mat-tab label="Liquidity">
+        <app-liquidity-analysis></app-liquidity-analysis>
+      </mat-tab>
+
+      <!--<mat-tab label="Performance">
+        <app-performance-dashboard></app-performance-dashboard>
+      </mat-tab>-->
+      <mat-tab label="Trading">
+        <app-trading></app-trading>
+      </mat-tab>
+      <mat-tab label="Brahmastra">
+        <app-brahmastra></app-brahmastra>
+      </mat-tab>
+      <mat-tab label="Settings">
+        <ng-container *ngIf="showSettings">
+          <app-settings></app-settings>
+        </ng-container>
+      </mat-tab>
+
+    </mat-tab-group>
+
+
+</main>
+<router-outlet></router-outlet>

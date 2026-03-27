@@ -1,0 +1,105 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.4.9'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.trading.kalyani'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation('org.springframework.boot:spring-boot-starter-web')
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	implementation group: 'com.zerodhatech.kiteconnect', name: 'kiteconnect', version: '3.5.1'
+	implementation group: 'com.fasterxml.jackson.core' , name: 'jackson-databind', version: '2.17.2'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation(project(":ktm-ui"))
+	compileOnly 'org.projectlombok:lombok'
+	runtimeOnly 'com.h2database:h2'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'io.projectreactor:reactor-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	implementation 'org.postgresql:postgresql:42.7.5'
+	implementation 'org.springframework:spring-websocket'
+	implementation 'org.springframework:spring-messaging'
+	implementation 'org.java-websocket:Java-WebSocket:1.5.2'
+	implementation 'jakarta.mail:jakarta.mail-api:2.0.1'
+	implementation 'com.sun.mail:jakarta.mail:2.0.1'
+
+	implementation 'commons-io:commons-io:2.11.0'
+	implementation 'javax.xml.bind:jaxb-api:2.3.1'
+//	implementation 'de.codecentric:spring-boot-admin-starter-client:3.4.7'
+
+	implementation 'org.apache.poi:poi-ooxml:5.2.3'
+	implementation 'org.json:json:20230227'
+// File: `build.gradle` (add to dependencies block)
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0'
+    // Preferred: pulls Hibernate Validator compatible with Spring Boot
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+
+
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+}
+
+// Define the source and destination directories
+def sourceDir = file('ktm-ui/dist/ktm-ui/browser')
+//def sourceDir = file('src/main/resources/public')
+def destinationDir = file('src/main/resources/static')
+
+// Task to delete the destination directory and its contents
+tasks.register('deleteDestinationDir', Delete) {
+	delete destinationDir
+	doLast {
+		destinationDir.mkdirs()
+	}
+
+}
+
+// Task to copy resources from source to destination
+tasks.register('copyResources', Copy) {
+	from sourceDir
+	into destinationDir
+}
+
+// Ensure the delete task runs before the copy task
+tasks.named('copyResources') {
+	dependsOn tasks.named('deleteDestinationDir')
+}
+
+// Add the copyResources task to the build lifecycle
+tasks.named('processResources') {
+	dependsOn tasks.named('copyResources')
+}
+
+tasks.named('build') {
+	dependsOn tasks.named('copyResources')
+}
+
+bootJar {
+	exclude 'org.projectlombok:lombok'
+}

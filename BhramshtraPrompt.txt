@@ -1,0 +1,124 @@
+Develop a feature as a new tab that implements the Brahmastra (Triple Confirmation Intraday Trading Strategy) as an automated signal generator and backtester. The app should analyze real-time or historical data for assets like Nifty, Sensex using Supertrend, MACD, and VWAP indicators on user-specified timeframes (default: 5-min). Generate buy/sell signals only when all three confirm, incorporate PCR for market bias filtering, and provide backtest reports with win rate, risk-reward ratio, and equity curves. Core Requirements
+Expose REST APIs for:
+
+Signal Generation: POST /api/signals/generate { "symbol": "BANKNIFTY", "timeframe": "5m", "fromDate": "2026-02-01", "toDate": "2026-02-11", "usePCR": true } → Returns list of signals with entry/exit prices, SL, TP suggestions, confidence score.
+
+Backtesting: POST /api/backtest/run { same params + "initialCapital": 100000, "riskPerTrade": 1 } → Returns JSON with metrics (total trades, win%, avg RR, max drawdown, Sharpe ratio) and trade log.
+
+Live Scanner: GET /api/scan/live?symbols=,NIFTY,SENSEX → Real-time signals via WebSocket. The scan should happen as part of DailyJobServicesImpl->runJob for appJobConfigNum = 1 or appJobConfigNum = 4.
+
+Dashboard: GET /api/dashboard/summary → Aggregated performance across assets.
+
+Data integration needs to be done with live data feed from KiteTickerProvider
+
+
+Layered Architecture: Controller → Service → Repository. Use @Async for heavy computations.
+
+Detailed Implementation Specs
+1. Indicator Calculations (Use precise formulas)
+Supertrend (ATR-based, default period 20, multiplier 2):
+
+text
+Basic Upper Band = (HL2 + (Multiplier * ATR))
+Basic Lower Band = (HL2 - (Multiplier * ATR))
+Final Upper = price > prev Upper ? min(Basic Upper, prev Final Upper) : Basic Upper
+Final Lower = price < prev Lower ? max(Basic Lower, prev Final Lower) : Basic Lower
+Trend = Close <= Final Lower ? 1 (down) : 0 (up)
+Signal: Green arrow on uptrend start, red on downtrend start.
+MACD (12,26,9):
+
+text
+MACD Line = EMA12 - EMA26
+Signal Line = EMA9 of MACD Line
+Buy: MACD > Signal; Sell: MACD < Signal
+VWAP (intraday reset):
+
+text
+VWAP = Cumulative (Price * Volume) / Cumulative Volume
+2. Signal Logic (Triple Confirmation)
+text
+boolean isBuySignal(Candle current, List<Candle> history) {
+    return macdCrossoverBullish(current)  // Blue > Red
+        && supertrendGreen(current)       // Green line/arrow
+        && current.close <= vwap(current) * 1.002;  // Near/below VWAP (±0.2%)
+}
+Entry: On signal + optional candle confirmation (breaks prev high/low).
+
+SL: Prev candle low (buy) / high (sell).
+
+Exit: MACD reversal OR SL hit. Partial profits at 1:1 RR.
+
+Filter: Skip if sideways (Supertrend flips >3x in 10 candles) OR PCR counter-bias (PCR>1.2=bullish only buys).
+
+3. PCR Integration
+PCR Data should be referred from IndexLTP object
+
+PCR >1.2: Bullish (allow buys).
+
+PCR <0.8: Bearish (allow sells).
+
+Mock or integrate real-time API.
+
+4. Backtest Engine
+Simulate trades sequentially:
+
+text
+Equity = initialCapital
+For each signal:
+  positionSize = (capital * risk%) / (entry - SL)
+  If hit TP/SL/exit: update P&L, drawdown
+Output: CSV exportable trade log + metrics table.
+5. Data Flow
+Historical: Fetch candles → Compute indicators → Store in DB.
+
+Live: Cron job every 5min → Scan symbols → Push WebSocket {symbol, signalType, entry, sl, rr}.
+
+6. UI/Extras (Optional React Frontend)
+Dashboard with charts (use Chart.js for equity curve, signal heatmap).
+
+Alert via Telegram bot (integrate API).
+
+Export: PDF reports of backtests.
+
+Sample Code Skeletons
+SignalService.java:
+
+java
+@Service
+public class SignalService {
+    public List<SignalDTO> generateSignals(String symbol, String timeframe, LocalDateTime from, LocalDateTime to) {
+        List<Candle> candles = dataService.fetchCandles(symbol, timeframe, from, to);
+        return candles.stream()
+            .filter(this::isTripleConfirmationBuy)
+            .map(this::buildBuySignal)
+            .collect(Collectors.toList());
+    }
+
+    private boolean isTripleConfirmationBuy(Candle c) { /* impl as above */ }
+}
+Controller:
+
+java
+@RestController
+@RequestMapping("/api/signals")
+public class SignalController {
+    @PostMapping("/generate")
+    public ResponseEntity<List<SignalDTO>> generate(@RequestBody SignalRequest req) {
+        return ResponseEntity.ok(signalService.generateSignals(req.getSymbol(), ...));
+    }
+}
+Edge Cases & Best Practices
+Handle gaps/no-volume (skip VWAP if no data).
+
+Timeframe flexibility (1m-1D).
+
+Pagination for large backtests.
+
+Unit tests for indicators (assert on sample data).
+
+Logging with SLF4J; rate limiting.
+
+Error: 400 for invalid symbols, 429 for API abuse.
+
+Build this as a production-ready, scalable feature. Ensure modularity for adding strategies. Optimize for Bangalore NSE timings (9:15-15:30 IST). Test with sample Nifty data from Feb 2026.
+

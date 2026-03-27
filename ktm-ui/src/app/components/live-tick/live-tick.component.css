@@ -1,0 +1,79 @@
+.live-tick-wrapper { width: 100%; }
+.live-tick-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #0d1b2a 100%);
+  border-radius: 8px;
+  border: 1px solid #294a63;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+.live-tick-item { display:flex; flex-direction:column; align-items:center; gap:4px; flex: 0 0 auto; }
+.nifty-ltp { min-width: 140px; }
+.vix-section { min-width: 70px; }
+.atm-section { min-width: 200px; }
+.straddle-section { min-width: 80px; }
+
+.tick-label { font-size:9px; color:#9aa7b2; }
+.tick-value { font-size:15px; font-weight:700; color:#e0fbfc; font-family: 'Roboto Mono', monospace; }
+.tick-value.positive { color:#00ff7f; }
+.tick-value.negative { color:#ff6b6b; }
+.tick-change { font-size:11px; color:#9aa7b2; }
+
+.prev-day-levels {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  margin-top: 2px;
+  padding: 3px 6px;
+  background: rgba(41, 74, 99, 0.3);
+  border-radius: 4px;
+  font-size: 9px;
+}
+
+.prev-day-label {
+  color: #7b8fa3;
+  font-weight: 500;
+}
+
+.prev-day-high {
+  color: #00ff7f;
+  font-weight: 600;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.prev-day-low {
+  color: #ff6b6b;
+  font-weight: 600;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.live-tick-divider {
+  width:0;
+  height:36px;
+  border-left: 2px solid rgba(120,160,200,0.95);
+  margin: 0 6px;
+  flex: 0 0 auto;
+}
+
+.live-indicator { display:flex; align-items:center; gap:6px; font-size:11px; color:#98c1d9; }
+.live-indicator .live-dot { width:8px; height:8px; border-radius:50%; background:#666; }
+.live-indicator.active .live-dot { background:#00ff7f; box-shadow:0 0 6px rgba(0,255,127,0.6); }
+.loading-text { color:#888 !important; }
+
+.atm-prices { display: flex; flex-direction: row; gap: 8px; align-items: center; justify-content: center; }
+.ce-price, .pe-price { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.option-type { font-size: 13px; color: #9aa7b2; font-weight: 600; }
+.atm-value { font-size: 17px; }
+
+@media (max-width: 420px) {
+  .live-tick-section { white-space: normal; flex-wrap: wrap; }
+  .nifty-ltp, .vix-section, .atm-section, .straddle-section { min-width: 120px; }
+  .atm-prices { flex-direction: column; gap: 6px; }
+  /* Responsive: reduce ATM font size on very small screens to avoid wrapping */
+  .option-type { font-size: 11px; }
+  .atm-value { font-size: 13px; }
+}

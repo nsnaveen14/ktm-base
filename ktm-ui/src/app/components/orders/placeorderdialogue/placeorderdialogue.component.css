@@ -1,0 +1,22 @@
+.mat-typography {
+    font-size: large;
+    margin-top: 1%;
+}
+
+#qty {
+      width:15%;
+      height:40px;
+}
+.mat-mdc-radio-button ~ .mat-mdc-radio-button {
+    margin-left: 10%;
+  }
+
+  ::ng-deep .mat-radio-button.buy .mat-radio-label-content {
+    
+    color: blue;
+}
+
+::ng-deep .mat-radio-button.sell .mat-radio-label-content {
+   
+    color: red;
+}

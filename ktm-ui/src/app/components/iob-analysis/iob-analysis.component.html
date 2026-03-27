@@ -1,0 +1,522 @@
+<div class="iob-container">
+  <!-- Header -->
+  <div class="iob-header">
+    <div class="header-left">
+      <h4>
+        <mat-icon>candlestick_chart</mat-icon>
+        Internal Order Block (IOB) Analysis
+      </h4>
+      <p class="subtitle">Detecting institutional order flow patterns for trade entries</p>
+    </div>
+
+    <!-- Auto-Refresh Status -->
+    <div class="realtime-status" [class.connected]="autoRefresh">
+      <span class="status-dot"></span>
+      <span class="status-text">{{ autoRefresh ? 'Auto-Refresh (1 min)' : 'Manual' }}</span>
+      <span *ngIf="newSignalCount > 0" class="new-signal-badge" (click)="clearNewSignalCount()">
+        {{ newSignalCount }} new
+      </span>
+    </div>
+
+    <app-live-tick></app-live-tick>
+
+    <div class="header-right">
+      <button mat-raised-button color="accent" (click)="scanAll()" [disabled]="isScanning">
+        <mat-icon>radar</mat-icon> Scan for IOBs
+      </button>
+      <button mat-raised-button color="primary" (click)="refreshData()" [disabled]="isLoading">
+        <mat-icon>refresh</mat-icon> Refresh
+      </button>
+      <button mat-icon-button [color]="autoRefresh ? 'primary' : 'default'"
+              (click)="toggleAutoRefresh()"
+              matTooltip="Toggle Auto-Refresh">
+        <mat-icon>{{autoRefresh ? 'autorenew' : 'sync_disabled'}}</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Instrument Selection -->
+  <div class="instrument-selector">
+    <mat-chip-set>
+      <mat-chip
+        [attr.highlighted]="selectedInstrument === 'NIFTY' ? 'true' : null"
+        (click)="selectInstrument('NIFTY')">
+        <mat-icon>trending_up</mat-icon> NIFTY 50
+      </mat-chip>
+    </mat-chip-set>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-cards">
+    <mat-card class="summary-card bullish-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="bullish-icon">arrow_upward</mat-icon>
+        <mat-card-title>Bullish IOBs</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="big-number bullish">{{getBullishCount()}}</span>
+        <span class="card-subtitle">Fresh zones for LONG entries</span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card bearish-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="bearish-icon">arrow_downward</mat-icon>
+        <mat-card-title>Bearish IOBs</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="big-number bearish">{{getBearishCount()}}</span>
+        <span class="card-subtitle">Fresh zones for SHORT entries</span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card tradable-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="tradable-icon">verified</mat-icon>
+        <mat-card-title>Tradable Setups</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="big-number tradable">{{getTradableCount()}}</span>
+        <span class="card-subtitle">High-confidence trade opportunities</span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card total-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>analytics</mat-icon>
+        <mat-card-title>Total Fresh IOBs</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="big-number">{{getBullishCount() + getBearishCount()}}</span>
+        <span class="card-subtitle">Active order block zones</span>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- IOB Table -->
+  <mat-card class="iob-table-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>table_chart</mat-icon>
+        Internal Order Blocks - {{selectedInstrument}}
+        <span class="iob-counts">
+          (Active: {{getActiveCount()}} | Mitigated: {{getMitigatedCount()}} | Completed: {{getCompletedCount()}})
+        </span>
+      </mat-card-title>
+      <div class="table-actions">
+        <mat-slide-toggle
+          [(ngModel)]="showMitigatedIOBs"
+          (change)="onShowMitigatedChange()"
+          color="primary"
+          matTooltip="Show/Hide mitigated IOBs (price touched zone)">
+          Show Mitigated
+        </mat-slide-toggle>
+        <mat-slide-toggle
+          [(ngModel)]="showCompletedIOBs"
+          (change)="onShowCompletedChange()"
+          color="accent"
+          matTooltip="Show/Hide completed IOBs (T3 hit or SL hit)">
+          Show Completed
+        </mat-slide-toggle>
+        <button mat-raised-button color="primary"
+                (click)="markSelectedAsCompleted()"
+                [disabled]="getSelectedCount() === 0 || isMarkingCompleted"
+                matTooltip="Mark selected IOBs as completed">
+          <mat-icon>check_circle</mat-icon>
+          Mark Completed ({{getSelectedCount()}})
+        </button>
+        <button mat-raised-button color="warn"
+                (click)="mitigateAllFresh()"
+                [disabled]="getFreshCount() === 0 || isMitigatingAll"
+                matTooltip="Mark all fresh IOBs as mitigated">
+          <mat-icon>done_all</mat-icon>
+          Mitigate All ({{getFreshCount()}})
+        </button>
+      </div>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="table-container">
+        <table mat-table [dataSource]="displayedIOBs" class="iob-table">
+
+          <!-- Checkbox Column -->
+          <ng-container matColumnDef="select">
+            <th mat-header-cell *matHeaderCellDef>
+              <mat-checkbox
+                [checked]="isAllSelected()"
+                [indeterminate]="isIndeterminate()"
+                (change)="toggleSelectAll()"
+                color="accent"
+                matTooltip="Select all">
+              </mat-checkbox>
+            </th>
+            <td mat-cell *matCellDef="let iob">
+              <mat-checkbox
+                [checked]="isSelected(iob)"
+                [disabled]="isCompleted(iob)"
+                (change)="toggleSelection(iob)"
+                color="accent">
+              </mat-checkbox>
+            </td>
+          </ng-container>
+
+          <!-- OB Type Column -->
+          <ng-container matColumnDef="obType">
+            <th mat-header-cell *matHeaderCellDef>Type</th>
+            <td mat-cell *matCellDef="let iob">
+              <span class="ob-type-badge" [ngClass]="getOBTypeClass(iob.obType)">
+                <mat-icon>{{getOBTypeIcon(iob.obType)}}</mat-icon>
+                {{iob.obType === 'BULLISH_IOB' ? 'BULLISH' : 'BEARISH'}}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- OB Candle Time Column -->
+          <ng-container matColumnDef="obCandleTime">
+            <th mat-header-cell *matHeaderCellDef>OB Time</th>
+            <td mat-cell *matCellDef="let iob">
+              {{formatDateTime(iob.obCandleTime)}}
+            </td>
+          </ng-container>
+
+          <!-- Detection Timestamp Column -->
+          <ng-container matColumnDef="detectionTimestamp">
+            <th mat-header-cell *matHeaderCellDef matTooltip="When this IOB was detected">Detected At</th>
+            <td mat-cell *matCellDef="let iob">
+              {{formatDateTime(iob.detectionTimestamp)}}
+            </td>
+          </ng-container>
+
+          <!-- Zone Column -->
+          <ng-container matColumnDef="zone">
+            <th mat-header-cell *matHeaderCellDef>Zone (Low - High)</th>
+            <td mat-cell *matCellDef="let iob" class="zone-cell">
+              {{getZoneDisplay(iob)}}
+            </td>
+          </ng-container>
+
+          <!-- Current Price Column -->
+          <ng-container matColumnDef="currentPrice">
+            <th mat-header-cell *matHeaderCellDef>Current Price</th>
+            <td mat-cell *matCellDef="let iob">
+              {{formatNumber(iob.currentPrice, 2)}}
+            </td>
+          </ng-container>
+
+          <!-- Distance to Zone Column -->
+          <ng-container matColumnDef="distanceToZone">
+            <th mat-header-cell *matHeaderCellDef>Distance</th>
+            <td mat-cell *matCellDef="let iob">
+              <span [ngClass]="{'distance-near': isNearZone(iob.distancePercent)}">
+                {{formatNumber(iob.distanceToZone, 2)}} ({{formatPercent(iob.distancePercent)}})
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Target Status Column -->
+          <ng-container matColumnDef="targetStatus">
+            <th mat-header-cell *matHeaderCellDef matTooltip="Target hit status">Progress</th>
+            <td mat-cell *matCellDef="let iob">
+              <span class="target-status-badge" [ngClass]="getTargetStatusClass(iob)">
+                {{getTargetStatusDisplay(iob)}}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Trade Direction Column -->
+          <ng-container matColumnDef="bosLevel">
+            <th mat-header-cell *matHeaderCellDef matTooltip="Break of Structure Level">BOS Level</th>
+            <td mat-cell *matCellDef="let iob">
+              {{formatNumber(iob.bosLevel, 2)}}
+            </td>
+          </ng-container>
+
+          <!-- FVG Validation Column -->
+          <ng-container matColumnDef="hasFvg">
+            <th mat-header-cell *matHeaderCellDef matTooltip="Fair Value Gap - 6 Factor Validation">FVG</th>
+            <td mat-cell *matCellDef="let iob">
+              <span class="fvg-badge" [ngClass]="getFvgClass(iob)" [matTooltip]="getFvgTooltip(iob)">
+                <mat-icon class="fvg-icon">{{getFvgIcon(iob)}}</mat-icon>
+                <span class="fvg-text">{{getFvgDisplayText(iob)}}</span>
+              </span>
+              <span *ngIf="iob.hasFvg && iob.fvgPriority > 0" class="fvg-priority-badge"
+                    matTooltip="FVG Priority Rank">
+                #{{iob.fvgPriority}}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Trade Direction Column -->
+          <ng-container matColumnDef="tradeDirection">
+            <th mat-header-cell *matHeaderCellDef>Direction</th>
+            <td mat-cell *matCellDef="let iob">
+              <span class="direction-badge" [ngClass]="getDirectionClass(iob.tradeDirection)">
+                {{iob.tradeDirection}}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Entry Price Column -->
+          <ng-container matColumnDef="entryPrice">
+            <th mat-header-cell *matHeaderCellDef>Entry</th>
+            <td mat-cell *matCellDef="let iob">
+              {{formatNumber(iob.entryPrice, 2)}}
+            </td>
+          </ng-container>
+
+          <!-- Stop Loss Column -->
+          <ng-container matColumnDef="stopLoss">
+            <th mat-header-cell *matHeaderCellDef>Stop Loss</th>
+            <td mat-cell *matCellDef="let iob" class="stop-loss">
+              {{formatNumber(iob.stopLoss, 2)}}
+            </td>
+          </ng-container>
+
+          <!-- Targets Column -->
+          <ng-container matColumnDef="targets">
+            <th mat-header-cell *matHeaderCellDef>Targets (T1 / T2 / T3)</th>
+            <td mat-cell *matCellDef="let iob" class="targets">
+              {{getTargetsDisplay(iob)}}
+            </td>
+          </ng-container>
+
+          <!-- Risk-Reward Column -->
+          <ng-container matColumnDef="riskReward">
+            <th mat-header-cell *matHeaderCellDef>R:R</th>
+            <td mat-cell *matCellDef="let iob">
+              <strong>{{formatNumber(iob.riskRewardRatio, 2)}}</strong>
+            </td>
+          </ng-container>
+
+          <!-- Confidence Column -->
+          <ng-container matColumnDef="confidence">
+            <th mat-header-cell *matHeaderCellDef>Confidence</th>
+            <td mat-cell *matCellDef="let iob">
+              <span class="confidence-badge" [ngClass]="getConfidenceClass(iob.signalConfidence)">
+                {{formatPercent(iob.signalConfidence)}}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Status Column -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let iob">
+              <span class="status-badge" [ngClass]="getStatusClass(iob.status)">
+                {{iob.status}}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let iob">
+              <button mat-icon-button color="primary"
+                      (click)="viewTradeSetup(iob)"
+                      matTooltip="View Trade Setup">
+                <mat-icon>visibility</mat-icon>
+              </button>
+              <button mat-icon-button color="accent"
+                      (click)="executeTrade(iob)"
+                      [disabled]="!iob.isValid || iob.tradeTaken || isExecutingTrade"
+                      matTooltip="Execute Trade">
+                <mat-icon>play_arrow</mat-icon>
+              </button>
+              <button mat-icon-button color="warn"
+                      (click)="markAsMitigated(iob)"
+                      [disabled]="!canMitigate(iob)"
+                      matTooltip="Mark as Mitigated">
+                <mat-icon>check_circle_outline</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+      </div>
+
+      <div *ngIf="getAllIOBs().length === 0" class="no-data">
+        <mat-icon>info</mat-icon>
+        <p>No Internal Order Blocks detected. Click "Scan for IOBs" to analyze.</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Completed/Mitigated IOBs Section -->
+  <mat-card class="completed-iob-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>history</mat-icon>
+        Completed IOB Signals - {{selectedInstrument}}
+        <span class="completed-stats">
+          (Total: {{getCompletedStats().total}} |
+          <span class="wins-count">Wins: {{getCompletedStats().wins}}</span> |
+          <span class="losses-count">Losses: {{getCompletedStats().losses}}</span> |
+          Win Rate: {{formatPercent(getCompletedStats().winRate)}})
+        </span>
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="table-container" *ngIf="getCompletedIOBsForSection().length > 0">
+        <table mat-table [dataSource]="getCompletedIOBsForSection()" class="completed-iob-table">
+
+          <!-- OB Type Column -->
+          <ng-container matColumnDef="obType">
+            <th mat-header-cell *matHeaderCellDef>Type</th>
+            <td mat-cell *matCellDef="let iob">
+              <span class="ob-type-badge" [ngClass]="getOBTypeClass(iob.obType)">
+                <mat-icon>{{getOBTypeIcon(iob.obType)}}</mat-icon>
+                {{iob.obType === 'BULLISH_IOB' ? 'BULLISH' : 'BEARISH'}}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- OB Candle Time Column -->
+          <ng-container matColumnDef="obCandleTime">
+            <th mat-header-cell *matHeaderCellDef>Signal Time</th>
+            <td mat-cell *matCellDef="let iob">
+              {{formatDateTime(iob.obCandleTime)}}
+            </td>
+          </ng-container>
+
+          <!-- Zone Column -->
+          <ng-container matColumnDef="zone">
+            <th mat-header-cell *matHeaderCellDef>Zone (Low - High)</th>
+            <td mat-cell *matCellDef="let iob" class="zone-cell">
+              {{getZoneDisplay(iob)}}
+            </td>
+          </ng-container>
+
+          <!-- Trade Direction Column -->
+          <ng-container matColumnDef="tradeDirection">
+            <th mat-header-cell *matHeaderCellDef>Direction</th>
+            <td mat-cell *matCellDef="let iob">
+              <span class="direction-badge" [ngClass]="getDirectionClass(iob.tradeDirection)">
+                {{iob.tradeDirection}}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Entry Price Column -->
+          <ng-container matColumnDef="entryPrice">
+            <th mat-header-cell *matHeaderCellDef>Entry</th>
+            <td mat-cell *matCellDef="let iob">
+              {{formatNumber(iob.entryPrice, 2)}}
+            </td>
+          </ng-container>
+
+          <!-- Stop Loss Column -->
+          <ng-container matColumnDef="stopLoss">
+            <th mat-header-cell *matHeaderCellDef>Stop Loss</th>
+            <td mat-cell *matCellDef="let iob" class="stop-loss">
+              {{formatNumber(iob.stopLoss, 2)}}
+            </td>
+          </ng-container>
+
+          <!-- Targets Column -->
+          <ng-container matColumnDef="targets">
+            <th mat-header-cell *matHeaderCellDef>Targets (T1 / T2 / T3)</th>
+            <td mat-cell *matCellDef="let iob" class="targets">
+              <span class="target-item" [ngClass]="{'target-hit': iob.target1AlertSent}">
+                {{formatNumber(iob.target1, 2)}}
+              </span>
+              <span class="target-separator"> / </span>
+              <span class="target-item" [ngClass]="{'target-hit': iob.target2AlertSent}">
+                {{formatNumber(iob.target2, 2)}}
+              </span>
+              <span class="target-separator"> / </span>
+              <span class="target-item" [ngClass]="{'target-hit': iob.target3AlertSent}">
+                {{formatNumber(iob.target3, 2)}}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Confidence Column -->
+          <ng-container matColumnDef="confidence">
+            <th mat-header-cell *matHeaderCellDef>Confidence</th>
+            <td mat-cell *matCellDef="let iob">
+              <span class="confidence-badge" [ngClass]="getConfidenceClass(iob.signalConfidence)">
+                {{formatPercent(iob.signalConfidence)}}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Outcome Column -->
+          <ng-container matColumnDef="outcome">
+            <th mat-header-cell *matHeaderCellDef>Outcome</th>
+            <td mat-cell *matCellDef="let iob">
+              <span class="outcome-badge" [ngClass]="getOutcomeClass(iob)">
+                {{getOutcomeDisplay(iob)}}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Estimated P&L Column -->
+          <ng-container matColumnDef="estimatedPnL">
+            <th mat-header-cell *matHeaderCellDef>Est. Points</th>
+            <td mat-cell *matCellDef="let iob">
+              <span class="pnl-value" [ngClass]="getPnLClass(iob)">
+                {{getEstimatedPnL(iob)}}
+              </span>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="completedDisplayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: completedDisplayedColumns;"
+              [ngClass]="getOutcomeClass(row)"></tr>
+        </table>
+      </div>
+
+      <div *ngIf="getCompletedIOBsForSection().length === 0" class="no-data">
+        <mat-icon>check_circle_outline</mat-icon>
+        <p>No completed IOB signals yet. Completed signals will appear here after targets or stop loss are hit.</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- IOB Explanation Card -->
+  <mat-card class="explanation-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>help_outline</mat-icon>
+        Understanding Internal Order Blocks
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="explanation-grid">
+        <div class="explanation-item">
+          <h5><mat-icon class="bullish-icon">arrow_upward</mat-icon> Bullish IOB</h5>
+          <p>The last bearish candle before a significant bullish move (Break of Structure upward).
+             Indicates institutional buying interest. Look for LONG entries when price returns to this zone.</p>
+        </div>
+        <div class="explanation-item">
+          <h5><mat-icon class="bearish-icon">arrow_downward</mat-icon> Bearish IOB</h5>
+          <p>The last bullish candle before a significant bearish move (Break of Structure downward).
+             Indicates institutional selling interest. Look for SHORT entries when price returns to this zone.</p>
+        </div>
+        <div class="explanation-item">
+          <h5><mat-icon>check_circle</mat-icon> FVG (Fair Value Gap) - 6 Factor Validation</h5>
+          <p>FVGs are validated using 6 factors: <strong>Unmitigated</strong> (zone not filled),
+             <strong>Candle Reaction</strong> (proper close on retrace),
+             <strong>S/R Confluence</strong> (overlaps with support/resistance),
+             <strong>Priority by Position</strong> (lowest bullish / highest bearish = best),
+             <strong>Gann Box Position</strong> (bullish in lower 50%, bearish in upper 50% of range), and
+             <strong>BOS Before Gap</strong> (formed after Break of Structure).
+             A score ≥ 50% = Valid FVG ✅.</p>
+        </div>
+        <div class="explanation-item">
+          <h5><mat-icon>swap_vert</mat-icon> BOS (Break of Structure)</h5>
+          <p>The swing high/low that was broken by the displacement move.
+             This confirms the change in market structure and validates the IOB.</p>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="isLoading || isScanning">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>{{isScanning ? 'Scanning for Internal Order Blocks...' : 'Loading IOB data...'}}</p>
+  </div>
+</div>

@@ -1,0 +1,83 @@
+<div class="live-tick-wrapper">
+  <ng-container *ngIf="liveTickData && liveTickData.niftyLTP > 0; else loading">
+    <div class="live-tick-section">
+      <div class="live-tick-item nifty-ltp">
+        <span class="tick-label">NIFTY 50</span>
+        <span class="tick-value nifty-value" [ngClass]="{'positive': liveTickData.niftyChange && liveTickData.niftyChange > 0,
+                                              'negative': liveTickData.niftyChange && liveTickData.niftyChange < 0}">
+          {{formatNumber(liveTickData.niftyLTP, 2)}}
+        </span>
+        <span class="tick-change" *ngIf="liveTickData.niftyChange"
+              [ngClass]="{'positive': liveTickData.niftyChange > 0, 'negative': liveTickData.niftyChange < 0}">
+          {{liveTickData.niftyChange > 0 ? '+' : ''}}{{formatNumber(liveTickData.niftyChange, 2)}}
+        </span>
+        <div class="prev-day-levels" *ngIf="liveTickData.previousDayHigh && liveTickData.previousDayLow">
+          <span class="prev-day-label">Prev Day:</span>
+          <span class="prev-day-high" [matTooltip]="'Previous Day High'">H: {{formatNumber(liveTickData.previousDayHigh, 2)}}</span>
+          <span class="prev-day-low" [matTooltip]="'Previous Day Low'">L: {{formatNumber(liveTickData.previousDayLow, 2)}}</span>
+        </div>
+      </div>
+      <div class="live-tick-divider"></div>
+      <div class="live-tick-item vix-section">
+        <span class="tick-label">INDIA VIX</span>
+        <span class="tick-value vix-value" [ngClass]="{'high-vix': liveTickData.vixValue && liveTickData.vixValue > 20,
+                                                        'low-vix': liveTickData.vixValue && liveTickData.vixValue < 13}">
+          {{formatNumber(liveTickData.vixValue, 2)}}
+        </span>
+      </div>
+      <div class="live-tick-divider"></div>
+      <div class="live-tick-item atm-section">
+        <span class="tick-label">ATM {{liveTickData.atmStrike}}</span>
+        <div class="atm-prices">
+          <div class="ce-price">
+            <span class="option-type ce">CE</span>
+            <span class="tick-value atm-value ce-value" [ngClass]="{'positive': liveTickData.atmCEChange && liveTickData.atmCEChange > 0,
+                                                  'negative': liveTickData.atmCEChange && liveTickData.atmCEChange < 0}">
+              {{formatNumber(liveTickData.atmCELTP, 2)}}
+            </span>
+          </div>
+          <div class="pe-price">
+            <span class="option-type pe">PE</span>
+            <span class="tick-value atm-value pe-value" [ngClass]="{'positive': liveTickData.atmPEChange && liveTickData.atmPEChange > 0,
+                                                  'negative': liveTickData.atmPEChange && liveTickData.atmPEChange < 0}">
+              {{formatNumber(liveTickData.atmPELTP, 2)}}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="live-tick-divider"></div>
+      <div class="live-tick-item straddle-section">
+        <span class="tick-label">Straddle</span>
+        <span class="tick-value straddle-value">{{formatNumber(liveTickData.straddlePremium, 2)}}</span>
+      </div>
+      <div class="live-indicator" [ngClass]="{'active': liveTickData.isLive}">
+        <span class="live-dot"></span>
+        {{liveTickData.isLive ? 'LIVE' : 'DELAYED'}}
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-template #loading>
+    <div class="live-tick-section loading">
+      <div class="live-tick-item">
+        <span class="tick-label">NIFTY 50</span>
+        <span class="tick-value loading-text">Loading...</span>
+      </div>
+      <div class="live-tick-divider"></div>
+      <div class="live-tick-item">
+        <span class="tick-label">INDIA VIX</span>
+        <span class="tick-value loading-text">--</span>
+      </div>
+      <div class="live-tick-divider"></div>
+      <div class="live-tick-item">
+        <span class="tick-label">ATM CE/PE</span>
+        <span class="tick-value loading-text">--</span>
+      </div>
+      <div class="live-indicator">
+        <span class="live-dot"></span>
+        CONNECTING
+      </div>
+    </div>
+  </ng-template>
+</div>
+

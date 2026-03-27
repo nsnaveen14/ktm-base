@@ -1,0 +1,9 @@
+
+  mat-tab-group {
+    background: rgb(150, 206, 238);
+  }
+ 
+  ::ng-deep .mat-mdc-tab-body-content {
+    overflow-x: hidden !important; /* Use !important to ensure it overrides */
+    height: 100% !important; /* Ensure height is set correctly */
+  }

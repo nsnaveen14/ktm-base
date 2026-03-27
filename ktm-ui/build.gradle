@@ -1,0 +1,18 @@
+plugins {
+  id 'java'
+  id 'com.github.node-gradle.node' version '2.2.0'
+}
+
+node {
+  version = '20.16.0'
+  npmVersion = '10.8.2'
+  download=true
+}
+
+java {
+  toolchain {
+    languageVersion = JavaLanguageVersion.of(21)
+  }
+}
+
+jar.dependsOn('npm_run_build')

@@ -1,0 +1,60 @@
+<div class="mat-elevation-z8">
+    <table mat-table [dataSource]="miniDeltaDataSource" class="mat-elevation-z8">
+        <ng-container matColumnDef="Time">
+            <th mat-header-cell *matHeaderCellDef> Time </th>
+            <td mat-cell *matCellDef="let element"> {{element.deltaInstant | date: 'HH:mm:ss'}} </td>
+
+        </ng-container>
+
+        <ng-container matColumnDef="Strike Price">
+            <th mat-header-cell *matHeaderCellDef> Strike Price </th>
+            <td mat-cell *matCellDef="let element" [ngClass]="{'bold-text': element.strikePrice === 'Total'}">
+                {{element.strikePrice}}
+            </td>
+        </ng-container>
+
+        <ng-container matColumnDef="CallOI">
+            <th mat-header-cell *matHeaderCellDef> CallOI </th>
+            <td mat-cell *matCellDef="let element" [ngClass]="getColorClass(element.callOIColor)">
+                {{round(element.callOI)}}
+            </td>
+        </ng-container>
+
+        <ng-container matColumnDef="PutOI">
+            <th mat-header-cell *matHeaderCellDef> PutOI </th>
+            <td mat-cell *matCellDef="let element" [ngClass]="getColorClass(element.putOIColor)">
+                {{round(element.putOI)}}
+            </td>
+        </ng-container>
+
+
+        <ng-container matColumnDef="StrikePCR">
+            <th mat-header-cell *matHeaderCellDef> StrikePCR </th>
+            <td mat-cell *matCellDef="let element" [ngClass]="getColorClass(element.strikePCRColor)">
+                {{element.strikePCR}}
+            </td>
+
+        </ng-container>
+        <ng-container matColumnDef="Rate OI">
+            <th mat-header-cell *matHeaderCellDef> Rate OI </th>
+            <td mat-cell *matCellDef="let element" [ngClass]="getColorClass(element.rateOIColor)"> {{element.rateOI}} </td>
+        </ng-container>
+
+      <ng-container matColumnDef="CallOIChange">
+        <th mat-header-cell *matHeaderCellDef> CallOI Change </th>
+        <td mat-cell *matCellDef="let element" [ngClass]="getColorClass(element.callOIChangeColor)">
+          {{round(element.callOIChange)}}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="PutOIChange">
+        <th mat-header-cell *matHeaderCellDef> PutOI Change</th>
+        <td mat-cell *matCellDef="let element" [ngClass]="getColorClass(element.putOIChangeColor)">
+          {{round(element.putOIChange)}}
+        </td>
+      </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="miniDeltaDataTableColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: miniDeltaDataTableColumns;"></tr>
+    </table>
+    </div>

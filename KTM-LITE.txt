@@ -1,0 +1,62 @@
+KTM-LITE
+Spring Boot backend, Angular Front End, H2 DB File Based (Weekly data refresh), Web Socket, Kite Ticker
+
+   Job Summary/Running Section: 
+						Prepare a framework for running jobs based on spot instrument tokens/index like NIFTY50, SENSEX, BANK NIFTY etc. 
+						1) Dashboard section - Realtime OI, LTP, Support Resistance calculation, Maxpain, Range calculation etc.
+						2) Chart section - Trading view / highcharts integration to show candle charts, automated identification of trendline calculation and markings based on swing lows and highs, double tops or double bottoms etc.
+						3) Multi-Timeframe Analysis - Strength,RSI,EMA 9,EMA 21,EMA 50, Liquidity Analysis - Swing Highs and Swing lows of each time frame, Stop Loss Clusters: Identifying liquidity grab opportunities for Long Unwind & Short Cover setups,
+    						Liquidity Zones & Key Levels (Highs and Lows) - Market Day Before Yesterday, Market Previous Day, Current Day. 
+						4) Options Greeks - Greeks Calculator based on options instrument selection
+						5) Price Action analysis - Dow Theory fundamentals (Trend analysis, Accumulation, Public Participation, Distribution, Inducement)
+						
+						
+	Trade Setups Section : 
+						Prepare a framework so that any new setup strategies comes under this tab.
+						1) Each setup can use historical candles and/or live ticks.
+						2) Each setup should have backtest/performance section
+						3) Each setup should have a automated simulated trading section based on generated signals
+						4) Each setup should have own chart section which shows the relevant key levels depending on the particular setup.
+						5) Each setup should have proper signals defining entry,exit,stoploss, key levels, targets, confidence etc.
+						6) Each setup should have real time telegram notification sending capabiliities/configuration.
+						7) Each setup should have its own section/tab on UI
+						8) Each setup should be configurable from settings section i.e. it can be turned on or off from settings
+						
+						Setups: 
+						1) Internal Order Blocks
+						2) OI PCR Movement
+                        3) Break Out Break Down (BOBD) Failures
+						4) **ORB (15-min Opening Range Breakout)**: 9:15-9:30 AM IST range → buy 0.3 delta OTM calls on upside volume breakout, puts on downside. SL: opposite range extreme. Target: 1:2 RR.
+						5) **VWAP Pullback**: Post-1 PM, price pulls to VWAP + RSI>40 → buy bounce directionally. SL: 0.5% premium decay.
+						6) **Supertrend Breakout**: Supertrend(10,3) flip + ADX>25 → buy 0.3 delta OTM directional. Trail SL on flip.
+						7) Average True Range
+						8) MACD
+						9) Zero-hero (on expiry) - Gamma Blast
+						10)Symmetrical Triangle
+						11)Double bottom or double tops
+						12)
+   Indicators section:
+                        Prepare a framework for indicators which can be used across different setups and strategies.
+                        1) Each indicator should have its own section/tab on UI where user can see the indicator values based on historical candles and live ticks.
+                        2) Each indicator should be configurable from settings section i.e. it can be turned on or off from settings
+                        3) Each indicator should have backtest/performance section to see how the indicator performed in the past based on historical data.
+                        4) Each indicator should have real time telegram notification sending capabiliities/configuration when certain conditions are met.
+   Settings section:  
+						Prepare a settings section, 
+						1) User should be able to create or modify an existing configuration. (At max 5-6 parallel configurations or instruments)
+						2) User should be able to toggle on/off telegram notifications of different features/setups. 
+						3) Instrument Explorer - 
+						
+	Auto Trade Section
+						
+						
+	Major Classes:
+	
+	AppIndexConfig, AppJobConfig, JobDetails, JobIterationDetails, TradeSetupConfig, TradeSetupSignals, TelegramNotifications
+   
+						
+						
+                        
+   
+      
+   

@@ -1,0 +1,619 @@
+<div class="iob-performance-container">
+  <!-- Header -->
+  <div class="header-section">
+    <h2>
+      <mat-icon>analytics</mat-icon>
+      IOB Trading Performance & Auto-Trade
+    </h2>
+    <div class="header-actions">
+      <button mat-raised-button color="primary" (click)="loadAllData()">
+        <mat-icon>refresh</mat-icon> Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <span>Loading data...</span>
+  </div>
+
+  <!-- Main Content -->
+  <mat-tab-group *ngIf="!isLoading">
+
+    <!-- Dashboard Tab -->
+    <mat-tab label="Dashboard">
+      <div class="tab-content">
+        <!-- Auto-Trade Control Card -->
+        <mat-card class="control-card">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>smart_toy</mat-icon> Auto-Trade Control
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="auto-trade-toggle">
+              <mat-slide-toggle
+                [checked]="autoTradeConfig?.autoTradingEnabled"
+                (change)="toggleAutoTrading()"
+                color="primary">
+                Auto-Trading {{ autoTradeConfig?.autoTradingEnabled ? 'ENABLED' : 'DISABLED' }}
+              </mat-slide-toggle>
+            </div>
+
+            <div class="risk-indicators" *ngIf="riskMetrics">
+              <div class="risk-item" [class.danger]="riskMetrics.dailyLossLimitReached">
+                <mat-icon>{{riskMetrics.dailyLossLimitReached ? 'error' : 'check_circle'}}</mat-icon>
+                <span>Daily Loss Limit</span>
+              </div>
+              <div class="risk-item" [class.warning]="riskMetrics.maxOpenTradesReached">
+                <mat-icon>{{riskMetrics.maxOpenTradesReached ? 'warning' : 'check_circle'}}</mat-icon>
+                <span>Max Trades ({{ riskMetrics.openTradesCount }}/{{ autoTradeConfig?.maxOpenTrades }})</span>
+              </div>
+              <div class="risk-item">
+                <mat-icon>whatshot</mat-icon>
+                <span>Portfolio Heat: {{ formatCurrency(riskMetrics.portfolioHeat) }}</span>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Today's Summary -->
+        <mat-card class="summary-card" *ngIf="todaySummary">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>today</mat-icon> Today's Summary
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="summary-grid">
+              <div class="summary-item">
+                <span class="label">Total Trades</span>
+                <span class="value">{{ todaySummary.totalTrades }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="label">Open</span>
+                <span class="value open">{{ todaySummary.openTrades }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="label">Wins</span>
+                <span class="value win">{{ todaySummary.wins }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="label">Losses</span>
+                <span class="value loss">{{ todaySummary.losses }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="label">Win Rate</span>
+                <span class="value" [class.good]="todaySummary.winRate >= 50">{{ formatPercent(todaySummary.winRate) }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="label">Total P&L</span>
+                <span class="value" [class.profit]="todaySummary.totalPnl > 0" [class.loss]="todaySummary.totalPnl < 0">
+                  {{ formatCurrency(todaySummary.totalPnl) }}
+                </span>
+              </div>
+              <div class="summary-item">
+                <span class="label">Avg RR</span>
+                <span class="value">{{ formatNumber(todaySummary.averageRR) }}</span>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- MTF Bias -->
+        <mat-card class="mtf-card" *ngIf="mtfAnalysis">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>layers</mat-icon> Multi-Timeframe Bias
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="mtf-bias">
+              <span class="bias-label">HTF Bias:</span>
+              <mat-chip [class]="getBiasClass(mtfAnalysis.htfBias)">
+                {{ mtfAnalysis.htfBias || 'NEUTRAL' }}
+              </mat-chip>
+            </div>
+            <div class="mtf-summary" *ngIf="mtfAnalysis.summaryByTimeframe">
+              <div *ngFor="let tf of ['5min', '15min', '1hour', 'daily']" class="tf-item">
+                <span class="tf-name">{{ tf }}</span>
+                <span class="tf-counts">
+                  🟢 {{ mtfAnalysis.summaryByTimeframe[tf]?.bullish || 0 }}
+                  🔴 {{ mtfAnalysis.summaryByTimeframe[tf]?.bearish || 0 }}
+                </span>
+              </div>
+            </div>
+            <div class="aligned-count">
+              HTF-Aligned IOBs: <strong>{{ mtfAnalysis.totalAligned }}</strong>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Open Trades Table -->
+        <mat-card class="trades-card" *ngIf="openTrades.length > 0">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>pending_actions</mat-icon> Open Trades ({{ openTrades.length }})
+            </mat-card-title>
+            <button mat-stroked-button color="warn" (click)="exitAllTrades()">
+              <mat-icon>close</mat-icon> Exit All
+            </button>
+          </mat-card-header>
+          <mat-card-content>
+            <table mat-table [dataSource]="openTrades" class="trades-table">
+              <ng-container matColumnDef="tradeId">
+                <th mat-header-cell *matHeaderCellDef>Trade ID</th>
+                <td mat-cell *matCellDef="let trade">{{ trade.tradeId }}</td>
+              </ng-container>
+              <ng-container matColumnDef="instrumentName">
+                <th mat-header-cell *matHeaderCellDef>Instrument</th>
+                <td mat-cell *matCellDef="let trade">{{ trade.instrumentName }}</td>
+              </ng-container>
+              <ng-container matColumnDef="tradeDirection">
+                <th mat-header-cell *matHeaderCellDef>Direction</th>
+                <td mat-cell *matCellDef="let trade" [class]="getDirectionClass(trade.tradeDirection)">
+                  {{ trade.tradeDirection }}
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="entryPrice">
+                <th mat-header-cell *matHeaderCellDef>Entry</th>
+                <td mat-cell *matCellDef="let trade">{{ formatNumber(trade.actualEntry) }}</td>
+              </ng-container>
+              <ng-container matColumnDef="exitPrice">
+                <th mat-header-cell *matHeaderCellDef>SL</th>
+                <td mat-cell *matCellDef="let trade">{{ formatNumber(trade.actualStopLoss) }}</td>
+              </ng-container>
+              <ng-container matColumnDef="pointsCaptured">
+                <th mat-header-cell *matHeaderCellDef>Target 1</th>
+                <td mat-cell *matCellDef="let trade">{{ formatNumber(trade.target1) }}</td>
+              </ng-container>
+              <ng-container matColumnDef="achievedRR">
+                <th mat-header-cell *matHeaderCellDef>Confidence</th>
+                <td mat-cell *matCellDef="let trade">{{ formatPercent(trade.signalConfidence) }}</td>
+              </ng-container>
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let trade" [class]="getStatusClass(trade.status)">
+                  {{ trade.status }}
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="exitReason">
+                <th mat-header-cell *matHeaderCellDef>Trigger</th>
+                <td mat-cell *matCellDef="let trade">{{ trade.entryTrigger }}</td>
+              </ng-container>
+              <ng-container matColumnDef="netPnl">
+                <th mat-header-cell *matHeaderCellDef>Unrealized P&L</th>
+                <td mat-cell *matCellDef="let trade">--</td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="tradeColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: tradeColumns;"></tr>
+            </table>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Performance Tab -->
+    <mat-tab label="Performance">
+      <div class="tab-content">
+        <mat-card *ngIf="performanceStats">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>bar_chart</mat-icon> 30-Day Performance
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="performance-grid">
+              <div class="perf-item large">
+                <span class="label">Total Trades</span>
+                <span class="value">{{ performanceStats.totalTrades }}</span>
+              </div>
+              <div class="perf-item">
+                <span class="label">Wins</span>
+                <span class="value win">{{ performanceStats.winningTrades }}</span>
+              </div>
+              <div class="perf-item">
+                <span class="label">Losses</span>
+                <span class="value loss">{{ performanceStats.losingTrades }}</span>
+              </div>
+              <div class="perf-item large">
+                <span class="label">Win Rate</span>
+                <span class="value" [class.good]="performanceStats.winRate >= 50">
+                  {{ formatPercent(performanceStats.winRate) }}
+                </span>
+              </div>
+              <div class="perf-item">
+                <span class="label">Avg RR</span>
+                <span class="value">{{ formatNumber(performanceStats.averageRR) }}</span>
+              </div>
+              <div class="perf-item large">
+                <span class="label">Total P&L</span>
+                <span class="value" [class.profit]="performanceStats.totalPnl > 0" [class.loss]="performanceStats.totalPnl < 0">
+                  {{ formatCurrency(performanceStats.totalPnl) }}
+                </span>
+              </div>
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <!-- Performance by Type -->
+            <h4>Performance by IOB Type</h4>
+            <div class="breakdown-grid" *ngIf="performanceStats.performanceByType">
+              <div *ngFor="let item of performanceStats.performanceByType" class="breakdown-item">
+                <span class="category">{{ item.category }}</span>
+                <span>Trades: {{ item.totalTrades }}</span>
+                <span>Wins: {{ item.wins }}</span>
+                <span>Avg RR: {{ formatNumber(item.avgRR) }}</span>
+              </div>
+            </div>
+
+            <!-- Performance by Timeframe -->
+            <h4>Performance by Timeframe</h4>
+            <div class="breakdown-grid" *ngIf="performanceStats.performanceByTimeframe">
+              <div *ngFor="let item of performanceStats.performanceByTimeframe" class="breakdown-item">
+                <span class="category">{{ item.category }}</span>
+                <span>Trades: {{ item.totalTrades }}</span>
+                <span>Wins: {{ item.wins }}</span>
+                <span>Avg RR: {{ formatNumber(item.avgRR) }}</span>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Today's Trade History -->
+        <mat-card *ngIf="todaysTrades.length > 0">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>history</mat-icon> Today's Trades
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <table mat-table [dataSource]="todaysTrades" class="trades-table">
+              <ng-container matColumnDef="tradeId">
+                <th mat-header-cell *matHeaderCellDef>Trade ID</th>
+                <td mat-cell *matCellDef="let trade">{{ trade.tradeId?.substring(0, 15) }}...</td>
+              </ng-container>
+              <ng-container matColumnDef="instrumentName">
+                <th mat-header-cell *matHeaderCellDef>Instrument</th>
+                <td mat-cell *matCellDef="let trade">{{ trade.instrumentName }}</td>
+              </ng-container>
+              <ng-container matColumnDef="tradeDirection">
+                <th mat-header-cell *matHeaderCellDef>Direction</th>
+                <td mat-cell *matCellDef="let trade" [class]="getDirectionClass(trade.tradeDirection)">
+                  {{ trade.tradeDirection }}
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="entryPrice">
+                <th mat-header-cell *matHeaderCellDef>Entry</th>
+                <td mat-cell *matCellDef="let trade">{{ formatNumber(trade.actualEntry) }}</td>
+              </ng-container>
+              <ng-container matColumnDef="exitPrice">
+                <th mat-header-cell *matHeaderCellDef>Exit</th>
+                <td mat-cell *matCellDef="let trade">{{ formatNumber(trade.exitPrice) }}</td>
+              </ng-container>
+              <ng-container matColumnDef="pointsCaptured">
+                <th mat-header-cell *matHeaderCellDef>Points</th>
+                <td mat-cell *matCellDef="let trade" [class]="getResultClass(trade.isWinner)">
+                  {{ formatNumber(trade.pointsCaptured) }}
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="achievedRR">
+                <th mat-header-cell *matHeaderCellDef>RR</th>
+                <td mat-cell *matCellDef="let trade">{{ formatNumber(trade.achievedRR) }}</td>
+              </ng-container>
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let trade" [class]="getStatusClass(trade.status)">
+                  {{ trade.status }}
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="exitReason">
+                <th mat-header-cell *matHeaderCellDef>Exit Reason</th>
+                <td mat-cell *matCellDef="let trade">{{ trade.exitReason || '--' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="netPnl">
+                <th mat-header-cell *matHeaderCellDef>P&L</th>
+                <td mat-cell *matCellDef="let trade" [class]="getResultClass(trade.isWinner)">
+                  {{ formatCurrency(trade.netPnl) }}
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="tradeColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: tradeColumns;" [class]="getResultClass(row.isWinner)"></tr>
+            </table>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Backtest Tab -->
+    <mat-tab label="Backtest">
+      <div class="tab-content">
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>science</mat-icon> Run Backtest
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="backtest-form">
+              <mat-form-field appearance="outline">
+                <mat-label>Instrument</mat-label>
+                <mat-select [(ngModel)]="backtestInstrument">
+                  <mat-option [value]="256265">NIFTY</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Start Date</mat-label>
+                <input matInput [matDatepicker]="startPicker" [(ngModel)]="backtestStartDate">
+                <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+                <mat-datepicker #startPicker></mat-datepicker>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>End Date</mat-label>
+                <input matInput [matDatepicker]="endPicker" [(ngModel)]="backtestEndDate">
+                <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+                <mat-datepicker #endPicker></mat-datepicker>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Timeframe</mat-label>
+                <mat-select [(ngModel)]="backtestTimeframe">
+                  <mat-option value="5min">5 Minutes</mat-option>
+                  <mat-option value="15min">15 Minutes</mat-option>
+                  <mat-option value="1hour">1 Hour</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <button mat-raised-button color="primary"
+                      (click)="runBacktest()"
+                      [disabled]="isRunningBacktest">
+                <mat-icon>play_arrow</mat-icon>
+                {{ isRunningBacktest ? 'Running...' : 'Run Backtest' }}
+              </button>
+            </div>
+
+            <div *ngIf="isRunningBacktest" class="loading-container">
+              <mat-spinner diameter="30"></mat-spinner>
+              <span>Running backtest... This may take a few minutes.</span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Backtest Results -->
+        <mat-card *ngIf="backtestResult" class="backtest-results">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>assessment</mat-icon> Backtest Results
+            </mat-card-title>
+            <button mat-raised-button color="accent" (click)="exportToExcel()" class="export-btn">
+              <mat-icon>file_download</mat-icon> Export to Excel
+            </button>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="results-summary">
+              <div class="result-item large">
+                <span class="label">Total Trades</span>
+                <span class="value">{{ backtestResult.totalTrades }}</span>
+              </div>
+              <div class="result-item">
+                <span class="label">Wins</span>
+                <span class="value win">{{ backtestResult.wins }}</span>
+              </div>
+              <div class="result-item">
+                <span class="label">Losses</span>
+                <span class="value loss">{{ backtestResult.losses }}</span>
+              </div>
+              <div class="result-item large">
+                <span class="label">Win Rate</span>
+                <span class="value" [class.good]="backtestResult.winRate >= 50">
+                  {{ formatPercent(backtestResult.winRate) }}
+                </span>
+              </div>
+              <div class="result-item">
+                <span class="label">Avg RR</span>
+                <span class="value">{{ formatNumber(backtestResult.averageRR) }}</span>
+              </div>
+              <div class="result-item large">
+                <span class="label">Total P&L</span>
+                <span class="value" [class.profit]="backtestResult.totalPnl > 0" [class.loss]="backtestResult.totalPnl < 0">
+                  {{ formatCurrency(backtestResult.totalPnl) }}
+                </span>
+              </div>
+              <div class="result-item large">
+                <span class="label">Total Points</span>
+                <span class="value" [class.profit]="backtestResult.totalPointsCaptured > 0" [class.loss]="backtestResult.totalPointsCaptured < 0">
+                  {{ formatNumber(backtestResult.totalPointsCaptured) }}
+                </span>
+              </div>
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <!-- Backtest Trades Table with Pagination -->
+            <h4>Trade Details ({{ backtestResult.trades?.length || 0 }} trades)</h4>
+            <div class="table-container" *ngIf="backtestResult.trades?.length">
+              <table mat-table [dataSource]="backtestTradesDataSource" class="trades-table backtest-trades-table">
+                <!-- Index Column -->
+                <ng-container matColumnDef="index">
+                  <th mat-header-cell *matHeaderCellDef>#</th>
+                  <td mat-cell *matCellDef="let trade; let i = index">
+                    {{ (backtestPaginator?.pageIndex || 0) * (backtestPaginator?.pageSize || 10) + i + 1 }}
+                  </td>
+                </ng-container>
+
+                <!-- Entry Time Column -->
+                <ng-container matColumnDef="entryTime">
+                  <th mat-header-cell *matHeaderCellDef>Time</th>
+                  <td mat-cell *matCellDef="let trade">{{ formatDateTime(trade.entryTime) }}</td>
+                </ng-container>
+
+                <!-- IOB Type Column -->
+                <ng-container matColumnDef="iobType">
+                  <th mat-header-cell *matHeaderCellDef>IOB Type</th>
+                  <td mat-cell *matCellDef="let trade">{{ trade.iobType }}</td>
+                </ng-container>
+
+                <!-- Trade Direction Column -->
+                <ng-container matColumnDef="tradeDirection">
+                  <th mat-header-cell *matHeaderCellDef>Direction</th>
+                  <td mat-cell *matCellDef="let trade" [class]="getDirectionClass(trade.tradeDirection)">
+                    {{ trade.tradeDirection }}
+                  </td>
+                </ng-container>
+
+                <!-- Confidence Column -->
+                <ng-container matColumnDef="confidence">
+                  <th mat-header-cell *matHeaderCellDef>Confidence</th>
+                  <td mat-cell *matCellDef="let trade">
+                    <span class="confidence-badge" [class.high]="trade.signalConfidence >= 85" [class.medium]="trade.signalConfidence >= 70 && trade.signalConfidence < 85" [class.low]="trade.signalConfidence < 70">
+                      {{ formatPercent(trade.signalConfidence) }}
+                    </span>
+                  </td>
+                </ng-container>
+
+                <!-- Zone Column -->
+                <ng-container matColumnDef="zone">
+                  <th mat-header-cell *matHeaderCellDef>Zone</th>
+                  <td mat-cell *matCellDef="let trade">
+                    <span class="zone-display">
+                      {{ formatNumber(trade.zoneLow, 0) }} - {{ formatNumber(trade.zoneHigh, 0) }}
+                    </span>
+                  </td>
+                </ng-container>
+
+                <!-- Entry Price Column -->
+                <ng-container matColumnDef="entryPrice">
+                  <th mat-header-cell *matHeaderCellDef>Entry</th>
+                  <td mat-cell *matCellDef="let trade">{{ formatNumber(trade.actualEntry) }}</td>
+                </ng-container>
+
+                <!-- Stop Loss Column -->
+                <ng-container matColumnDef="stopLoss">
+                  <th mat-header-cell *matHeaderCellDef>SL</th>
+                  <td mat-cell *matCellDef="let trade" class="sl-value">{{ formatNumber(trade.actualStopLoss) }}</td>
+                </ng-container>
+
+                <!-- Targets Column -->
+                <ng-container matColumnDef="targets">
+                  <th mat-header-cell *matHeaderCellDef>Targets (T1/T2/T3)</th>
+                  <td mat-cell *matCellDef="let trade">
+                    <span class="targets-display">
+                      {{ formatNumber(trade.target1, 0) }} / {{ formatNumber(trade.target2, 0) }} / {{ formatNumber(trade.target3, 0) }}
+                    </span>
+                  </td>
+                </ng-container>
+
+                <!-- Exit Price Column -->
+                <ng-container matColumnDef="exitPrice">
+                  <th mat-header-cell *matHeaderCellDef>Exit</th>
+                  <td mat-cell *matCellDef="let trade">{{ formatNumber(trade.exitPrice) }}</td>
+                </ng-container>
+
+                <!-- Points Captured Column -->
+                <ng-container matColumnDef="pointsCaptured">
+                  <th mat-header-cell *matHeaderCellDef>Points</th>
+                  <td mat-cell *matCellDef="let trade" [class]="getResultClass(trade.isWinner)">
+                    {{ formatNumber(trade.pointsCaptured) }}
+                  </td>
+                </ng-container>
+
+                <!-- Achieved RR Column -->
+                <ng-container matColumnDef="achievedRR">
+                  <th mat-header-cell *matHeaderCellDef>RR</th>
+                  <td mat-cell *matCellDef="let trade">{{ formatNumber(trade.achievedRR) }}</td>
+                </ng-container>
+
+                <!-- Result Column -->
+                <ng-container matColumnDef="result">
+                  <th mat-header-cell *matHeaderCellDef>Result</th>
+                  <td mat-cell *matCellDef="let trade" [class]="getResultClass(trade.isWinner)">
+                    {{ trade.isWinner ? 'WIN' : 'LOSS' }}
+                  </td>
+                </ng-container>
+
+                <!-- Exit Reason Column -->
+                <ng-container matColumnDef="exitReason">
+                  <th mat-header-cell *matHeaderCellDef>Exit Reason</th>
+                  <td mat-cell *matCellDef="let trade">{{ trade.exitReason }}</td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="backtestColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: backtestColumns;" [class]="getResultClass(row.isWinner)"></tr>
+              </table>
+
+              <mat-paginator #backtestPaginator
+                [pageSizeOptions]="[10, 25, 50, 100]"
+                [pageSize]="10"
+                showFirstLastButtons
+                aria-label="Select page of trades">
+              </mat-paginator>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Configuration Tab -->
+    <mat-tab label="Configuration">
+      <div class="tab-content">
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>settings</mat-icon> Auto-Trade Configuration
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="config-form">
+              <mat-form-field appearance="outline">
+                <mat-label>Minimum Confidence (%)</mat-label>
+                <input matInput type="number" [(ngModel)]="configMinConfidence" min="0" max="100">
+                <mat-hint>Only trade IOBs with confidence above this threshold</mat-hint>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Max Zone Distance (%)</mat-label>
+                <input matInput type="number" [(ngModel)]="configMaxDistance" min="0" step="0.1">
+                <mat-hint>Maximum distance from zone to trigger entry</mat-hint>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Max Open Trades</mat-label>
+                <input matInput type="number" [(ngModel)]="configMaxTrades" min="1" max="10">
+                <mat-hint>Maximum number of simultaneous open trades</mat-hint>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Daily Loss Limit (₹)</mat-label>
+                <input matInput type="number" [(ngModel)]="configDailyLoss" min="0">
+                <mat-hint>Stop trading when daily loss exceeds this amount</mat-hint>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Risk Per Trade (₹)</mat-label>
+                <input matInput type="number" [(ngModel)]="configRiskPerTrade" min="0">
+                <mat-hint>Maximum risk amount per trade for position sizing</mat-hint>
+              </mat-form-field>
+
+              <div class="toggle-options">
+                <mat-slide-toggle [(ngModel)]="configRequireFVG" color="primary">
+                  Require FVG Confluence
+                </mat-slide-toggle>
+
+                <mat-slide-toggle [(ngModel)]="configRequireHTF" color="primary">
+                  Require HTF Alignment
+                </mat-slide-toggle>
+              </div>
+
+              <button mat-raised-button color="primary" (click)="saveConfig()">
+                <mat-icon>save</mat-icon> Save Configuration
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>

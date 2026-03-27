@@ -1,0 +1,453 @@
+<div class="liquidity-container">
+  <!-- Header -->
+  <div class="liquidity-header">
+    <div class="header-left">
+      <h4>
+        <mat-icon>water_drop</mat-icon>
+        Liquidity Analysis - Stop Loss Clusters
+      </h4>
+      <p class="subtitle">Identifying liquidity grab opportunities for Long Unwind & Short Cover setups</p>
+    </div>
+
+    <app-live-tick></app-live-tick>
+
+    <div class="header-right">
+      <button mat-raised-button color="accent" (click)="analyzeAll()" [disabled]="isLoading">
+        <mat-icon>analytics</mat-icon> Analyze All
+      </button>
+      <button mat-raised-button color="primary" (click)="refreshData()" [disabled]="isLoading">
+        <mat-icon>refresh</mat-icon> Refresh
+      </button>
+      <button mat-icon-button [color]="autoRefresh ? 'primary' : 'default'"
+              (click)="toggleAutoRefresh()"
+              matTooltip="Toggle Auto-Refresh">
+        <mat-icon>{{autoRefresh ? 'autorenew' : 'sync_disabled'}}</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Instrument Selection -->
+  <div class="instrument-selector">
+    <mat-chip-set>
+      <mat-chip
+        [highlighted]="selectedInstrument === 'NIFTY'"
+        (click)="selectInstrument('NIFTY')">
+        <mat-icon>trending_up</mat-icon> NIFTY 50
+      </mat-chip>
+    </mat-chip-set>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-cards" *ngIf="getSelectedData() as data">
+    <mat-card class="summary-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>account_balance</mat-icon>
+        <mat-card-title>Current Price</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="big-number">
+          {{formatNumber(getAnalysisForTimeframe(selectedTimeframe)?.currentPrice, 2)}}
+        </span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>timeline</mat-icon>
+        <mat-card-title>Market Structure</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="structure-badge" [ngClass]="getMarketStructureClass(getAnalysisForTimeframe(selectedTimeframe)?.marketStructure || '')">
+          {{getAnalysisForTimeframe(selectedTimeframe)?.marketStructure || 'N/A'}}
+        </span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>warning</mat-icon>
+        <mat-card-title>Liquidity Grab</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="grab-badge"
+              *ngIf="getAnalysisForTimeframe(selectedTimeframe) as analysis; else noGrabData"
+              [ngClass]="getGrabTypeClass(analysis)">
+          {{getGrabTypeText(analysis)}}
+        </span>
+        <ng-template #noGrabData>
+          <span class="grab-badge grab-none">No Data</span>
+        </ng-template>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card signal-card" *ngIf="getAnalysisForTimeframe(selectedTimeframe) as analysis">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>flag</mat-icon>
+        <mat-card-title>Trade Signal</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="signal-badge" [ngClass]="getSignalClass(analysis.tradeSignal)">
+          <mat-icon>{{getSignalIcon(analysis.tradeSignal)}}</mat-icon>
+          {{analysis.tradeSignal || 'NO SIGNAL'}}
+        </span>
+        <span class="confidence-text" [ngClass]="getConfidenceClass(analysis.signalConfidence)">
+          Confidence: {{formatPercent(analysis.signalConfidence)}}
+        </span>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Multi-Timeframe Analysis Table -->
+  <mat-card class="analysis-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>table_chart</mat-icon>
+        Multi-Timeframe Liquidity Analysis - {{selectedInstrument}}
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="table-container">
+        <table mat-table [dataSource]="getAllAnalyses()" class="liquidity-table">
+
+          <!-- Timeframe Column -->
+          <ng-container matColumnDef="timeframe">
+            <th mat-header-cell *matHeaderCellDef>Timeframe</th>
+            <td mat-cell *matCellDef="let analysis">
+              <strong>{{analysis.timeframe}}</strong>
+            </td>
+          </ng-container>
+
+          <!-- Current Price Column -->
+          <ng-container matColumnDef="currentPrice">
+            <th mat-header-cell *matHeaderCellDef>Current Price</th>
+            <td mat-cell *matCellDef="let analysis">
+              {{formatNumber(analysis.currentPrice, 2)}}
+            </td>
+          </ng-container>
+
+          <!-- Buy-Side Liquidity Column -->
+          <ng-container matColumnDef="buySideLiquidity">
+            <th mat-header-cell *matHeaderCellDef matTooltip="Stop losses above these levels (long traders)">
+              Buy-Side Liquidity
+            </th>
+            <td mat-cell *matCellDef="let analysis" class="liquidity-levels buy-side">
+              {{getLiquidityLevels(analysis, 'buy')}}
+            </td>
+          </ng-container>
+
+          <!-- Sell-Side Liquidity Column -->
+          <ng-container matColumnDef="sellSideLiquidity">
+            <th mat-header-cell *matHeaderCellDef matTooltip="Stop losses below these levels (short traders)">
+              Sell-Side Liquidity
+            </th>
+            <td mat-cell *matCellDef="let analysis" class="liquidity-levels sell-side">
+              {{getLiquidityLevels(analysis, 'sell')}}
+            </td>
+          </ng-container>
+
+          <!-- Grabbed Level Column -->
+          <ng-container matColumnDef="grabbedLevel">
+            <th mat-header-cell *matHeaderCellDef>Grabbed Level</th>
+            <td mat-cell *matCellDef="let analysis">
+              <span *ngIf="analysis.grabbedLevel" class="grabbed-level" [ngClass]="getGrabTypeClass(analysis)">
+                {{formatNumber(analysis.grabbedLevel, 2)}}
+                <mat-icon class="small-icon">{{analysis.buySideGrabbed ? 'arrow_upward' : 'arrow_downward'}}</mat-icon>
+              </span>
+              <span *ngIf="!analysis.grabbedLevel">--</span>
+            </td>
+          </ng-container>
+
+          <!-- Trade Signal Column -->
+          <ng-container matColumnDef="tradeSignal">
+            <th mat-header-cell *matHeaderCellDef>Signal</th>
+            <td mat-cell *matCellDef="let analysis">
+              <span class="table-badge" [ngClass]="getSignalClass(analysis.tradeSignal)">
+                {{analysis.tradeSignal || 'NO SIGNAL'}}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Entry Price Column -->
+          <ng-container matColumnDef="entryPrice">
+            <th mat-header-cell *matHeaderCellDef>Entry</th>
+            <td mat-cell *matCellDef="let analysis">
+              {{formatNumber(analysis.entryPrice, 2)}}
+            </td>
+          </ng-container>
+
+          <!-- Stop Loss Column -->
+          <ng-container matColumnDef="stopLoss">
+            <th mat-header-cell *matHeaderCellDef>Stop Loss</th>
+            <td mat-cell *matCellDef="let analysis" class="stop-loss">
+              {{formatNumber(analysis.stopLoss, 2)}}
+            </td>
+          </ng-container>
+
+          <!-- Targets Column -->
+          <ng-container matColumnDef="targets">
+            <th mat-header-cell *matHeaderCellDef>Targets (T1 / T2 / T3)</th>
+            <td mat-cell *matCellDef="let analysis" class="targets">
+              {{getTargets(analysis)}}
+            </td>
+          </ng-container>
+
+          <!-- Risk-Reward Column -->
+          <ng-container matColumnDef="riskReward">
+            <th mat-header-cell *matHeaderCellDef>R:R</th>
+            <td mat-cell *matCellDef="let analysis">
+              <strong>{{formatNumber(analysis.riskRewardRatio, 2)}}</strong>
+            </td>
+          </ng-container>
+
+          <!-- Confidence Column -->
+          <ng-container matColumnDef="confidence">
+            <th mat-header-cell *matHeaderCellDef>Confidence</th>
+            <td mat-cell *matCellDef="let analysis">
+              <span class="confidence-badge" [ngClass]="getConfidenceClass(analysis.signalConfidence)">
+                {{formatPercent(analysis.signalConfidence)}}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Status Column -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let analysis">
+              <span class="table-badge" [ngClass]="getStatusClass(analysis)">
+                {{getStatusText(analysis)}}
+              </span>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+      </div>
+
+      <div *ngIf="getAllAnalyses().length === 0" class="no-data">
+        <mat-icon>info</mat-icon>
+        <p>No analysis data available. Click "Analyze All" to generate.</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Detailed View Section -->
+  <mat-divider class="section-divider"></mat-divider>
+
+  <!-- Timeframe Tabs for Detailed View -->
+  <mat-tab-group (selectedIndexChange)="selectTimeframe($event)">
+    <mat-tab label="5 Minutes">
+      <ng-container *ngTemplateOutlet="detailedAnalysis; context: {analysis: getAnalysisForTimeframe('5min')}"></ng-container>
+    </mat-tab>
+    <mat-tab label="15 Minutes">
+      <ng-container *ngTemplateOutlet="detailedAnalysis; context: {analysis: getAnalysisForTimeframe('15min')}"></ng-container>
+    </mat-tab>
+    <mat-tab label="1 Hour">
+      <ng-container *ngTemplateOutlet="detailedAnalysis; context: {analysis: getAnalysisForTimeframe('1hour')}"></ng-container>
+    </mat-tab>
+  </mat-tab-group>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Analyzing liquidity zones...</p>
+  </div>
+</div>
+
+<!-- Template for Detailed Analysis -->
+<ng-template #detailedAnalysis let-analysis="analysis">
+  <div class="detailed-analysis" *ngIf="analysis">
+    <mat-card class="detail-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>insights</mat-icon>
+          Liquidity Zones & Key Levels
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="levels-grid">
+          <!-- Day Before Yesterday Levels -->
+          <div class="level-group day-before-yesterday">
+            <h5><mat-icon>history</mat-icon> Day Before Yesterday</h5>
+            <div class="level-item">
+              <span class="level-label">High:</span>
+              <span class="level-value buy-side">{{formatNumber(analysis.dayBeforeYesterdayHigh, 2)}}</span>
+            </div>
+            <div class="level-item">
+              <span class="level-label">Low:</span>
+              <span class="level-value sell-side">{{formatNumber(analysis.dayBeforeYesterdayLow, 2)}}</span>
+            </div>
+          </div>
+
+          <!-- Previous Day Levels -->
+          <div class="level-group previous-day">
+            <h5><mat-icon>calendar_today</mat-icon> Previous Day</h5>
+            <div class="level-item">
+              <span class="level-label">High:</span>
+              <span class="level-value buy-side">{{formatNumber(analysis.previousDayHigh, 2)}}</span>
+            </div>
+            <div class="level-item">
+              <span class="level-label">Low:</span>
+              <span class="level-value sell-side">{{formatNumber(analysis.previousDayLow, 2)}}</span>
+            </div>
+          </div>
+
+          <!-- Current Day Levels -->
+          <div class="level-group current-day">
+            <h5><mat-icon>today</mat-icon> Current Day</h5>
+            <div class="level-item">
+              <span class="level-label">High:</span>
+              <span class="level-value buy-side">{{formatNumber(analysis.currentDayHigh, 2)}}</span>
+            </div>
+            <div class="level-item">
+              <span class="level-label">Low:</span>
+              <span class="level-value sell-side">{{formatNumber(analysis.currentDayLow, 2)}}</span>
+            </div>
+          </div>
+
+          <!-- Timeframe Swing Points -->
+          <div class="level-group">
+            <h5><mat-icon>swap_vert</mat-icon> Swing Points ({{analysis.timeframe}})</h5>
+            <div class="level-item">
+              <span class="level-label">High 1:</span>
+              <span class="level-value">{{formatNumber(analysis.timeframeHigh1, 2)}}</span>
+            </div>
+            <div class="level-item">
+              <span class="level-label">High 2:</span>
+              <span class="level-value">{{formatNumber(analysis.timeframeHigh2, 2)}}</span>
+            </div>
+            <div class="level-item">
+              <span class="level-label">Low 1:</span>
+              <span class="level-value">{{formatNumber(analysis.timeframeLow1, 2)}}</span>
+            </div>
+            <div class="level-item">
+              <span class="level-label">Low 2:</span>
+              <span class="level-value">{{formatNumber(analysis.timeframeLow2, 2)}}</span>
+            </div>
+          </div>
+
+          <!-- Liquidity Zones -->
+          <div class="level-group liquidity-zones">
+            <h5><mat-icon>water_drop</mat-icon> Stop Loss Clusters</h5>
+            <div class="liquidity-side">
+              <strong class="buy-side">Buy-Side (Above Price):</strong>
+              <div class="level-item">
+                <span class="level-value buy-side">{{formatNumber(analysis.buySideLiquidity1, 2)}}</span>
+                <span class="level-value buy-side">{{formatNumber(analysis.buySideLiquidity2, 2)}}</span>
+                <span class="level-value buy-side">{{formatNumber(analysis.buySideLiquidity3, 2)}}</span>
+              </div>
+            </div>
+            <div class="liquidity-side">
+              <strong class="sell-side">Sell-Side (Below Price):</strong>
+              <div class="level-item">
+                <span class="level-value sell-side">{{formatNumber(analysis.sellSideLiquidity1, 2)}}</span>
+                <span class="level-value sell-side">{{formatNumber(analysis.sellSideLiquidity2, 2)}}</span>
+                <span class="level-value sell-side">{{formatNumber(analysis.sellSideLiquidity3, 2)}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Trade Setup Card -->
+    <mat-card class="detail-card trade-setup-card" *ngIf="hasValidSetup(analysis)">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>assessment</mat-icon>
+          Trade Setup - {{analysis.strategyType}}
+          <span class="timeframe-badge">{{analysis.timeframe}}</span>
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="trade-setup">
+          <div class="setup-row">
+            <div class="setup-item">
+              <mat-icon>flag</mat-icon>
+              <span class="setup-label">Signal:</span>
+              <span class="setup-value signal" [ngClass]="getSignalClass(analysis.tradeSignal)">
+                {{analysis.tradeSignal}}
+              </span>
+            </div>
+            <div class="setup-item">
+              <mat-icon>login</mat-icon>
+              <span class="setup-label">Entry:</span>
+              <span class="setup-value">{{formatNumber(analysis.entryPrice, 2)}}</span>
+            </div>
+            <div class="setup-item">
+              <mat-icon>block</mat-icon>
+              <span class="setup-label">Stop Loss:</span>
+              <span class="setup-value stop-loss">{{formatNumber(analysis.stopLoss, 2)}}</span>
+            </div>
+          </div>
+          <div class="setup-row">
+            <div class="setup-item">
+              <mat-icon>trending_up</mat-icon>
+              <span class="setup-label">Target 1:</span>
+              <span class="setup-value target">{{formatNumber(analysis.target1, 2)}}</span>
+            </div>
+            <div class="setup-item">
+              <mat-icon>trending_up</mat-icon>
+              <span class="setup-label">Target 2:</span>
+              <span class="setup-value target">{{formatNumber(analysis.target2, 2)}}</span>
+            </div>
+            <div class="setup-item">
+              <mat-icon>trending_up</mat-icon>
+              <span class="setup-label">Target 3:</span>
+              <span class="setup-value target">{{formatNumber(analysis.target3, 2)}}</span>
+            </div>
+          </div>
+          <div class="setup-row">
+            <div class="setup-item">
+              <mat-icon>compare_arrows</mat-icon>
+              <span class="setup-label">Risk:Reward:</span>
+              <span class="setup-value rr">1:{{formatNumber(analysis.riskRewardRatio, 2)}}</span>
+            </div>
+            <div class="setup-item">
+              <mat-icon>verified</mat-icon>
+              <span class="setup-label">Confidence:</span>
+              <span class="setup-value" [ngClass]="getConfidenceClass(analysis.signalConfidence)">
+                {{formatPercent(analysis.signalConfidence)}}
+              </span>
+            </div>
+            <div class="setup-item">
+              <mat-icon>swap_horiz</mat-icon>
+              <span class="setup-label">Position:</span>
+              <span class="setup-value">{{analysis.positionType}}</span>
+            </div>
+          </div>
+          <div class="notes" *ngIf="analysis.notes">
+            <mat-icon>note</mat-icon>
+            <p>{{analysis.notes}}</p>
+          </div>
+
+          <!-- Automated Trade Button -->
+          <div class="trade-action">
+            <button mat-raised-button
+                    [color]="analysis.tradeSignal === 'SHORT_COVER' ? 'primary' : 'warn'"
+                    (click)="placeLiquidityTrade(analysis)"
+                    [disabled]="isLoading || isPlacingTrade">
+              <mat-icon>{{analysis.tradeSignal === 'SHORT_COVER' ? 'arrow_upward' : 'arrow_downward'}}</mat-icon>
+              Execute {{analysis.tradeSignal}} ({{analysis.timeframe}})
+            </button>
+            <span class="trade-source-label">
+              Trade Source: LIQUIDITY_{{analysis.timeframe | uppercase}}
+            </span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <div *ngIf="!hasValidSetup(analysis)" class="no-setup">
+      <mat-icon>info</mat-icon>
+      <p>No valid trade setup available for this timeframe.</p>
+      <p class="reason" *ngIf="analysis.rejectionReason">Reason: {{analysis.rejectionReason}}</p>
+    </div>
+  </div>
+
+  <div class="no-data" *ngIf="!analysis">
+    <mat-icon>hourglass_empty</mat-icon>
+    <p>No analysis available for this timeframe. Run analysis to generate data.</p>
+  </div>
+</ng-template>
+

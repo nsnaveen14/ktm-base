@@ -1,0 +1,24 @@
+.GREEN {
+    color: green;
+}
+
+.RED {
+    color: red;
+}
+
+.BLACK {
+    color: rgb(18, 49, 187);
+}
+
+.BOLD {
+    color: black;
+    font-weight: bold;
+}
+
+.bold-text {
+    font-weight: bold;
+}
+
+.mat-mdc-row, mdc-data-table__row, cdk-row {
+    height: 10px;
+}

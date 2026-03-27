@@ -1,0 +1,72 @@
+<div *ngIf="ltpTrackerPaginatorDataSource.data && ltpTrackerPaginatorDataSource.data.length > 0" class="mat-elevation-z8">
+
+     <!-- Table -->
+  <table mat-table [dataSource]="ltpTrackerPaginatorDataSource" class="mat-elevation-z8" style="width: 100%">
+
+    <ng-container matColumnDef="AppJobConfigNum">
+      <th mat-header-cell *matHeaderCellDef> Config Num </th>
+      <td mat-cell *matCellDef="let element"> {{element.appJobConfigNum}} </td>
+    </ng-container>
+    <ng-container matColumnDef="Call StrikePrice">
+      <th mat-header-cell *matHeaderCellDef> Call StrikePrice </th>
+      <td mat-cell *matCellDef="let element">
+        <ng-container *ngIf="editingRow === element && editingColumn === 'Call StrikePrice'; else displayCallStrike">
+          <input
+            type="text"
+            [(ngModel)]="element.atmStrikePriceCE"
+            (blur)="saveEdit(element, 'Call StrikePrice', element.atmStrikePriceCE)"
+            (keydown.enter)="saveEdit(element, 'Call StrikePrice', element.atmStrikePriceCE)"
+            autofocus
+            style="width: 80px;"
+          />
+        </ng-container>
+        <ng-template #displayCallStrike>
+          <span
+            (dblclick)="startEdit(element, 'Call StrikePrice')"
+            matTooltip="Double click to edit"
+            style="cursor: pointer; display: flex; align-items: center;"
+          >
+            {{element.atmStrikePriceCE}}
+            <mat-icon fontIcon="edit" style="font-size: 16px; margin-left: 4px; color: #888;"></mat-icon>
+          </span>
+        </ng-template>
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="Put StrikePrice">
+      <th mat-header-cell *matHeaderCellDef> Put StrikePrice </th>
+      <td mat-cell *matCellDef="let element">
+        <ng-container *ngIf="editingRow === element && editingColumn === 'Put StrikePrice'; else displayPutStrike">
+          <input
+            type="text"
+            [(ngModel)]="element.atmStrikePricePE"
+            (blur)="saveEdit(element, 'Put StrikePrice', element.atmStrikePricePE)"
+            (keydown.enter)="saveEdit(element, 'Put StrikePrice', element.atmStrikePricePE)"
+            autofocus
+            style="width: 80px;"
+          />
+        </ng-container>
+        <ng-template #displayPutStrike>
+          <span
+            (dblclick)="startEdit(element, 'Put StrikePrice')"
+            matTooltip="Double click to edit"
+            style="cursor: pointer; display: flex; align-items: center;"
+          >
+            {{element.atmStrikePricePE}}
+            <mat-icon fontIcon="edit" style="font-size: 16px; margin-left: 4px; color: #888;"></mat-icon>
+          </span>
+        </ng-template>
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="Last Modified">
+      <th mat-header-cell *matHeaderCellDef> Last Modified </th>
+      <td mat-cell *matCellDef="let element"> {{element.configSTP | date:'short'}} </td>
+    </ng-container>
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+  </table>
+
+</div>
+<mat-paginator [pageSizeOptions]="[7,10]" showFirstLastButtons aria-label="LTP Tracking Configs"></mat-paginator>
+<div *ngIf="!ltpTrackerPaginatorDataSource.data || ltpTrackerPaginatorDataSource.data.length === 0">
+  <p>No data found</p>
+</div>

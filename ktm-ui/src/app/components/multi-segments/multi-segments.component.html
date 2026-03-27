@@ -1,0 +1,73 @@
+<div id="appConfigTabs" class="row" style="padding: 0.5%">
+  <div *ngIf="appJobConfigDetails && appJobConfigDetails.length > 0">
+    <mat-tab-group [(selectedIndex)]="selectedTabIndex" (selectedIndexChange)="onTabChange($event)">
+      <mat-tab *ngFor="let config of appJobConfigDetails; let i = index"
+        [label]="i === 0 ? config.appIndexConfig.indexName : config.appIndexConfig.indexName + ' - ' + config.jobType.jobType">
+
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+</div>
+
+<div id="selectedConfigDetails" class="row" style="padding: 0.25%">
+  <div *ngIf="selectedConfig">
+
+    <ng-container [ngSwitch]="selectedConfig.appJobConfigNum">
+
+      <!-- Case 1 -->
+      <div *ngSwitchCase="0">
+
+        <app-summary-tab #summaryTabTradeDecisionsRef [selectedConfigFromMultiSegment]="selectedConfig"
+          [indexOHLCData]="indexOHLCData">
+        </app-summary-tab>
+      </div>
+      <!-- Default Case -->
+      <div *ngSwitchDefault>
+        <div class="row" style="height:50px;padding:0.25%">
+          <div class="col-sm-1">
+            <button class="btn btn-primary" id="startJob" (click)="startJob()">Start job</button>
+          </div>
+          <div class="col-sm-1">
+            <button class="btn btn-primary" id="stopJob" (click)="stopJob()">Stop job</button>
+          </div>
+
+          <div class="col-sm-3">
+            <textarea class="form-control" rows="1" readonly style="overflow: hidden;">
+                LTP:  {{this.currentIndexOHLCData?.indexLTP}}, Threshold: {{this.currentIndexOHLCData?.thresholdValue}}, Low: {{this.currentIndexOHLCData?.dayLow}}, High: {{this.currentIndexOHLCData?.dayHigh}}
+            </textarea>
+          </div>
+          <div class="col-sm-2">
+            <mat-slide-toggle [checked]="showOnlyTradeDecisions" (change)="toggleTradeDecisionFilter()" color="primary">
+              Show only BUY/SELL
+            </mat-slide-toggle>
+          </div>
+          <div class="col-sm-1">
+            <button class="btn btn-primary" id="swingDataPoint" (click)="getSwingCandleData()">Get Swing
+              Candles</button>
+
+          </div>
+          <div class="col-sm-1">
+            <button class="btn btn-primary" id="exitMarket" (click)="exitMarket()">Exit Market</button>
+          </div>
+        </div>
+        <div class="row" style="height: 900px; padding:0.25%">
+          <div id="deltaTable" class="col-sm-4">
+            <div id="mini-delta-table">
+              <app-minidelta-table-confignum #deltaTableRef
+                [selectedConfigFromMultiSegment]="selectedConfig"></app-minidelta-table-confignum>
+            </div>
+            <!--<div id="index-ltp-chart">
+              <app-index-ltpchart></app-index-ltpchart>
+            </div>-->
+          </div>
+          <div id="indexTable" class="col-sm-8">
+            <app-index-ltpticker #indexLtptickerRef [selectedConfigFromMultiSegment]="selectedConfig">
+            </app-index-ltpticker>
+
+          </div>
+        </div>
+      </div>
+
+    </ng-container>
+  </div>
+</div>

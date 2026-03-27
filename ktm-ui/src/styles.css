@@ -1,0 +1,466 @@
+/* You can add global styles to this file, and also import other style files */
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+/* High-priority global rules for Material form fields inside config-panel */
+.config-panel .mat-form-field, .config-panel mat-form-field,
+.config-panel .mat-mdc-form-field, .config-panel mat-form-field[appearance="outline"] {
+  background: rgba(0,0,0,0.20) !important;
+  border-radius: 6px !important;
+  padding: 6px !important;
+}
+
+.config-panel .mat-form-field .mat-form-field-infix,
+.config-panel .mat-form-field .mat-input-element,
+.config-panel .mat-mdc-form-field .mat-mdc-form-field-flex,
+.config-panel input[matInput],
+.config-panel input.mat-mdc-text-field-input {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* Ensure floating labels are visible and float above the input value */
+.config-panel .mat-form-field.mat-focused .mat-form-field-label,
+.config-panel .mat-form-field.mat-form-field-can-float.mat-form-field-should-float .mat-form-field-label,
+.config-panel .mat-mdc-form-field.mat-mdc-form-field-should-float .mat-mdc-form-field-label {
+  transform: translateY(-1.6em) scale(0.75) !important;
+  color: #cfe8f5 !important;
+  opacity: 1 !important;
+}
+
+/* Placeholder and suffix visibility */
+.config-panel input::placeholder,
+.config-panel input:-webkit-input-placeholder,
+.config-panel .mat-form-field-suffix,
+.config-panel .mat-mdc-form-field-suffix {
+  color: rgba(255,255,255,0.78) !important;
+  opacity: 1 !important;
+}
+
+/* Autofill and selection visibility */
+.config-panel input:-webkit-autofill,
+.config-panel input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: 0 0 0px 1000px rgba(255,255,255,0.03) inset !important;
+}
+
+.config-panel input::selection {
+  background: rgba(99,174,240,0.3) !important;
+}
+
+/* Make mat-icons and expansion header globally visible in config panel */
+.config-panel .mat-expansion-panel-header,
+.config-panel .mat-panel-title,
+.config-panel .mat-panel-description,
+.config-panel mat-icon {
+  color: #ffffff !important;
+}
+
+/* Ensure suffix % is readable in read-only spans too */
+.config-panel span {
+  color: #ffffff !important;
+}
+
+/* Safety: escalate specificity for stubborn themes */
+body .config-panel .mat-form-field .mat-input-element,
+body .config-panel input[matInput] {
+  color: #ffffff !important;
+}
+
+/* Strong high-contrast header for Trading Configuration expansion panel */
+.config-panel.mat-expansion-panel .mat-expansion-panel-header,
+.config-panel .mat-expansion-panel-header {
+  background: linear-gradient(90deg, #081018 0%, #0d1318 100%) !important;
+  border: 1px solid rgba(255,255,255,0.04) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 2px 8px rgba(0,0,0,0.45) !important;
+  color: #ffffff !important;
+  padding: 12px 16px !important;
+}
+
+.config-panel .mat-panel-title {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 1.02rem !important;
+  letter-spacing: 0.2px !important;
+}
+
+/* Ensure header icons and descriptions are visible */
+.config-panel mat-icon,
+.config-panel .mat-panel-description {
+  color: rgba(191, 226, 255, 0.95) !important;
+}
+
+/* Slightly brighter divider under header to separate content */
+.config-panel .mat-expansion-panel-header + .mat-expansion-panel-content {
+  border-top: 1px solid rgba(255,255,255,0.03) !important;
+}
+
+/* Make closed header state slightly lighter so it stands out */
+.config-panel.mat-expansion-panel:not(.mat-expanded) .mat-expansion-panel-header {
+  background: linear-gradient(90deg, #09121a, #0c1316) !important;
+}
+
+/* Accessibility: ensure focus outline is visible when tabbing */
+.config-panel .mat-expansion-panel-header:focus {
+  outline: 3px solid rgba(99,174,240,0.18) !important;
+  outline-offset: 2px !important;
+}
+
+/* Strong global overrides to make Today's Trades (history-card) header and actions highly visible in dark theme */
+body .history-card.mat-expansion-panel,
+body .history-card.mat-expansion-panel .mat-expansion-panel-header {
+  background: linear-gradient(180deg, #0f1214 0%, #141517 100%) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.6) !important;
+}
+
+body .history-card.mat-expansion-panel .mat-expansion-panel-header {
+  padding: 12px 18px !important;
+  min-height: 56px !important;
+  color: #ffffff !important;
+}
+
+body .history-card .mat-panel-title,
+body .history-card .mat-panel-title * {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.6) !important;
+}
+
+body .history-card .mat-panel-description,
+body .history-card .mat-panel-description * {
+  color: rgba(255,255,255,0.92) !important;
+}
+
+/* Make the discard button in the history header clearly visible even when theme overrides exist */
+body .history-card .mat-panel-description button {
+  color: #ffffff !important;
+  background: linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  box-shadow: none !important;
+}
+
+/* Ensure warn-stroked shows red tint */
+body .history-card .mat-panel-description button[color="warn"],
+body .history-card .mat-panel-description button[ng-reflect-color="warn"] {
+  color: #fff !important;
+  border-color: rgba(244,67,54,0.9) !important;
+  background: rgba(244,67,54,0.06) !important;
+}
+
+/* Checkbox and label contrast */
+body .history-card .mat-checkbox .mat-checkbox-frame {
+  border-color: rgba(255,255,255,0.22) !important;
+}
+body .history-card .mat-checkbox .mat-checkbox-background,
+body .history-card .mat-checkbox.mat-accent .mat-checkbox-background {
+  background-color: rgba(99,174,240,0.95) !important;
+}
+body .history-card .mat-checkbox-label,
+body .history-card .mat-checkbox .mat-checkbox-label {
+  color: #ffffff !important;
+}
+
+/* Table header high contrast */
+body .history-card .trades-table th {
+  color: rgba(255,255,255,0.85) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.04) !important;
+}
+
+/* Ensure icons in header are visible */
+body .history-card mat-icon {
+  color: rgba(141,217,255,0.95) !important;
+}
+
+/* Make sure the expansion header actions area (description) aligns right and is visible */
+body .history-card .mat-expansion-panel-header .mat-panel-description {
+  margin-left: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+/* Final safety: if some parent rule hides all color, force text color for the whole panel */
+body .history-card,
+body .history-card * {
+  color: inherit !important;
+}
+
+/* End of history-card overrides */
+
+/* Extra strong overrides to cover MDC and classic mat-button variants inside history-card */
+body .history-card .mat-stroked-button,
+body .history-card .mat-flat-button,
+body .history-card .mat-raised-button,
+body .history-card .mat-button,
+body .history-card button.mat-button,
+body .history-card button.mat-stroked-button {
+  color: #ffffff !important;
+  background: linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+/* Specifically target MDC-stroked/outlined button classes */
+body .history-card .mat-mdc-button, body .history-card .mat-mdc-button.mat-stroked,
+body .history-card .mat-mdc-button.mat-flat {
+  color: #ffffff !important;
+  background: rgba(255,255,255,0.02) !important;
+  border-color: rgba(255,255,255,0.12) !important;
+}
+
+/* Make icons inside header buttons visible */
+body .history-card button mat-icon,
+body .history-card button .mat-icon {
+  color: #ffffff !important;
+}
+
+/* Ensure header title and description are fully opaque and above any overlays */
+body .history-card .mat-expansion-panel-header,
+body .history-card .mat-panel-title,
+body .history-card .mat-panel-description {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  z-index: 50 !important;
+}
+
+/* Table actions (select all) - make checkbox label and text visible */
+body .history-card .table-actions {
+  padding: 8px 0 12px 0 !important;
+}
+body .history-card .table-actions mat-checkbox .mat-checkbox-label,
+body .history-card .table-actions .mat-checkbox-label {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* Ensure the discard button is not visually hidden by flex alignment - keep it visible */
+body .history-card .mat-panel-description button {
+  min-width: 160px !important;
+  padding: 6px 10px !important;
+}
+
+/* Make sure per-row checkbox labels are visible */
+body .history-card .trades-table mat-checkbox .mat-checkbox-label {
+  color: #ffffff !important;
+}
+
+/* If any ancestor sets very low contrast with filter/opacity, ensure history header undoes it */
+body .history-card.mat-expansion-panel .mat-expansion-panel-header {
+  filter: none !important;
+  -webkit-filter: none !important;
+  opacity: 1 !important;
+}
+
+/* Last resort: move the header content to appear above others */
+body .history-card .mat-expansion-panel-header {
+  position: relative !important;
+  z-index: 9999 !important;
+}
+
+/* FINAL FORCE-OVERRIDES: make history header and discard action unmistakably visible */
+/* Extremely high specificity and multi-variant selectors to cover MDC/classic and attribute-reflected color bindings */
+html body .history-card.mat-expansion-panel .mat-expansion-panel-header,
+html body .history-card .mat-expansion-panel-header,
+html body .history-card .mat-panel-title,
+html body .history-card .mat-panel-description {
+  background: linear-gradient(90deg,#0b0f11 0%,#111316 100%) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.8) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  z-index: 99999 !important;
+}
+
+/* Make the discard button visibly red and filled so it can't blend into the header */
+html body .history-card .mat-panel-description button.mat-stroked-button[color="warn"],
+html body .history-card .mat-panel-description button.mat-stroked-button[ng-reflect-color="warn"],
+html body .history-card .mat-panel-description .mat-mdc-button.mat-stroked[color="warn"],
+html body .history-card .mat-panel-description .mat-mdc-button.mat-stroked[ng-reflect-color="warn"] {
+  color: #ffffff !important;
+  background: linear-gradient(180deg,#e53935 0%,#d32f2f 100%) !important; /* vivid material red */
+  border-color: rgba(255,255,255,0.14) !important;
+  box-shadow: 0 2px 8px rgba(217,63,55,0.28) !important;
+  padding: 6px 12px !important;
+  min-width: 140px !important;
+  opacity: 1 !important;
+}
+
+/* hover / focus / active must remain visible */
+html body .history-card .mat-panel-description button.mat-stroked-button[color="warn"]:hover,
+html body .history-card .mat-panel-description .mat-mdc-button.mat-stroked[color="warn"]:hover,
+html body .history-card .mat-panel-description button.mat-stroked-button[color="warn"]:focus,
+html body .history-card .mat-panel-description .mat-mdc-button.mat-stroked[color="warn"]:focus {
+  background: linear-gradient(180deg,#ff5252 0%,#e53935 100%) !important;
+  transform: translateY(-1px) !important;
+  outline: 3px solid rgba(229,83,83,0.16) !important;
+}
+
+html body .history-card .mat-panel-description button.mat-stroked-button[color="warn"]:active,
+html body .history-card .mat-panel-description .mat-mdc-button.mat-stroked[color="warn"]:active {
+  background: linear-gradient(180deg,#d32f2f 0%,#c62828 100%) !important;
+  transform: translateY(0) !important;
+}
+
+/* ensure icon & text inside the button are white and high-contrast */
+html body .history-card .mat-panel-description button mat-icon,
+html body .history-card .mat-panel-description button .mat-icon,
+html body .history-card .mat-panel-description button svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+/* If theme applies a strong filter/opacity on child elements, undo it for the header actions */
+html body .history-card .mat-panel-description,
+html body .history-card .mat-expansion-panel-header .mat-panel-description {
+  filter: none !important;
+  -webkit-filter: none !important;
+  opacity: 1 !important;
+}
+
+/* Make sure the header description area sits above any overlays and keeps its layout */
+html body .history-card .mat-expansion-panel-header .mat-panel-description {
+  margin-left: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  z-index: 100000 !important;
+}
+
+/* Provide a last-resort visible outline for keyboard users */
+html body .history-card .mat-panel-description button:focus {
+  box-shadow: 0 0 0 4px rgba(255,82,82,0.12) !important;
+  border-radius: 6px !important;
+}
+
+/* If an ancestor forces low-contrast text color via mix-blend-mode, force normal blending */
+html body .history-card,
+html body .history-card * {
+  mix-blend-mode: normal !important;
+  -webkit-text-stroke: 0.0px rgba(0,0,0,0) !important;
+}
+
+/* Keep a readable gap between title and description on narrow screens */
+@media (max-width: 720px) {
+  html body .history-card .mat-expansion-panel-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+  html body .history-card .mat-panel-description button {
+    min-width: 100% !important;
+  }
+}
+
+/* ======================== */
+/* Global Material dropdown panel styles for dark theme */
+/* These styles are needed because dropdown panels render in CDK overlay outside component scope */
+/* ======================== */
+
+.cdk-overlay-container .mat-mdc-select-panel,
+.mat-mdc-select-panel,
+.mat-select-panel {
+  background-color: #1e1e1e !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+}
+
+.cdk-overlay-container .mat-mdc-option,
+.mat-mdc-option,
+.mat-option {
+  color: #ffffff !important;
+  background-color: transparent !important;
+}
+
+.cdk-overlay-container .mat-mdc-option:hover,
+.cdk-overlay-container .mat-mdc-option.mat-mdc-option-active,
+.mat-mdc-option:hover,
+.mat-mdc-option.mat-mdc-option-active,
+.mat-option:hover,
+.mat-option.mat-active {
+  background-color: rgba(255,255,255,0.08) !important;
+}
+
+.cdk-overlay-container .mat-mdc-option.mdc-list-item--selected,
+.mat-mdc-option.mdc-list-item--selected,
+.mat-option.mat-selected {
+  background-color: rgba(25, 118, 210, 0.2) !important;
+  color: #90caf9 !important;
+}
+
+.cdk-overlay-container .mat-mdc-option .mdc-list-item__primary-text,
+.mat-mdc-option .mdc-list-item__primary-text {
+  color: #ffffff !important;
+}
+
+/* Autocomplete panel */
+.cdk-overlay-container .mat-mdc-autocomplete-panel,
+.mat-mdc-autocomplete-panel {
+  background-color: #1e1e1e !important;
+  color: #ffffff !important;
+}
+
+/* Menu panel */
+.cdk-overlay-container .mat-mdc-menu-panel,
+.mat-mdc-menu-panel {
+  background-color: #1e1e1e !important;
+  color: #ffffff !important;
+}
+
+.cdk-overlay-container .mat-mdc-menu-item,
+.mat-mdc-menu-item {
+  color: #ffffff !important;
+}
+
+.cdk-overlay-container .mat-mdc-menu-item:hover,
+.mat-mdc-menu-item:hover {
+  background-color: rgba(255,255,255,0.08) !important;
+}
+
+/* Scoped overlay panel styles for Reversal Patterns selects only */
+.cdk-overlay-container .reversal-patterns-select-panel {
+  background-color: #1e1e1e !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.6) !important;
+}
+.cdk-overlay-container .reversal-patterns-select-panel .mat-mdc-option,
+.cdk-overlay-container .reversal-patterns-select-panel .mat-option {
+  color: #ffffff !important;
+}
+.cdk-overlay-container .reversal-patterns-select-panel .mat-mdc-option:hover,
+.cdk-overlay-container .reversal-patterns-select-panel .mat-option:hover {
+  background-color: rgba(255,255,255,0.06) !important;
+}
+
+/* Note: Reversal-patterns component styles remain in its component CSS file. */
+
+/* Custom Dialog Global Styles */
+.custom-dialog-container {
+  background: transparent !important;
+}
+
+.custom-dialog-container .mat-mdc-dialog-container {
+  background: transparent !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+.custom-dialog-container .mat-mdc-dialog-surface {
+  background: #1e1e2f !important;
+  border-radius: 16px !important;
+  padding: 0 !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.cdk-overlay-dark-backdrop {
+  background: rgba(0, 0, 0, 0.75) !important;
+  backdrop-filter: blur(4px) !important;
+}
+

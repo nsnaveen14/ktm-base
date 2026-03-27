@@ -1,0 +1,874 @@
+.iob-container {
+  padding: 20px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  min-height: 100vh;
+  color: #e0e0e0;
+}
+
+.iob-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 15px 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.header-left h4 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #00d4ff;
+  font-size: 1.5rem;
+}
+
+.header-left .subtitle {
+  margin: 5px 0 0 0;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.header-right {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Real-Time Connection Status */
+.realtime-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(244, 67, 54, 0.2);
+  border-radius: 20px;
+  border: 1px solid rgba(244, 67, 54, 0.4);
+  transition: all 0.3s ease;
+}
+
+.realtime-status.connected {
+  background: rgba(76, 175, 80, 0.2);
+  border-color: rgba(76, 175, 80, 0.4);
+}
+
+.realtime-status .status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #f44336;
+}
+
+.realtime-status.connected .status-dot {
+  background: #4caf50;
+  animation: pulse-green 1.5s infinite;
+}
+
+.realtime-status .status-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #f44336;
+}
+
+.realtime-status.connected .status-text {
+  color: #4caf50;
+}
+
+.new-signal-badge {
+  background: #ff9800;
+  color: #000;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  animation: pulse-orange 1s infinite;
+}
+
+@keyframes pulse-green {
+  0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(76, 175, 80, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+}
+
+@keyframes pulse-orange {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* Highlight new IOB rows */
+:host ::ng-deep tr.new-iob-row {
+  animation: highlight-new 3s ease-out;
+}
+
+@keyframes highlight-new {
+  0% { background-color: rgba(255, 193, 7, 0.5) !important; }
+  100% { background-color: transparent; }
+}
+
+.instrument-selector {
+  margin-bottom: 20px;
+}
+
+.instrument-selector mat-chip {
+  cursor: pointer;
+  font-size: 14px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #2a4a6f 100%) !important;
+  color: #e0e1dd !important;
+  border: 1px solid #3a5a7f;
+}
+
+.instrument-selector mat-chip[highlighted="true"] {
+  background: linear-gradient(135deg, #00d4ff, #0099cc) !important;
+  color: white !important;
+  border: 1px solid #00d4ff;
+}
+
+/* Summary Cards */
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.summary-card {
+  background: rgba(0, 0, 0, 0.4) !important;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.summary-card mat-card-header {
+  padding: 15px 15px 0;
+}
+
+.summary-card mat-card-content {
+  padding: 15px;
+  text-align: center;
+}
+
+.summary-card .big-number {
+  font-size: 2.5rem;
+  font-weight: bold;
+  display: block;
+}
+
+.summary-card .card-subtitle {
+  font-size: 0.8rem;
+  color: #888;
+  display: block;
+  margin-top: 5px;
+}
+
+.bullish-card {
+  border-left: 4px solid #00ff88;
+}
+
+.bearish-card {
+  border-left: 4px solid #ff4444;
+}
+
+.tradable-card {
+  border-left: 4px solid #ffaa00;
+}
+
+.total-card {
+  border-left: 4px solid #00d4ff;
+}
+
+.bullish-icon {
+  color: #00ff88 !important;
+}
+
+.bearish-icon {
+  color: #ff4444 !important;
+}
+
+.tradable-icon {
+  color: #ffaa00 !important;
+}
+
+.big-number.bullish {
+  color: #00ff88;
+}
+
+.big-number.bearish {
+  color: #ff4444;
+}
+
+.big-number.tradable {
+  color: #ffaa00;
+}
+
+/* IOB Table */
+.iob-table-card {
+  background: rgba(0, 0, 0, 0.4) !important;
+  border-radius: 12px;
+  margin-bottom: 25px;
+}
+
+.iob-table-card mat-card-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.iob-table-card mat-card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #00d4ff;
+}
+
+.table-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.table-actions button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.table-actions button mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.table-container {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 600px;
+}
+
+.iob-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.iob-table {
+  width: 100%;
+  background: transparent !important;
+}
+
+.iob-table th {
+  background: rgba(0, 100, 150, 0.3) !important;
+  color: #00d4ff !important;
+  font-weight: 600;
+  padding: 12px 8px !important;
+}
+
+.iob-table td {
+  color: #e0e0e0 !important;
+  padding: 10px 8px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.iob-table tr:hover td {
+  background: rgba(0, 150, 200, 0.1) !important;
+}
+
+/* OB Type Badge */
+.ob-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 15px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.ob-type-badge mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.ob-bullish {
+  background: rgba(0, 255, 136, 0.2);
+  color: #00ff88;
+}
+
+.ob-bearish {
+  background: rgba(255, 68, 68, 0.2);
+  color: #ff4444;
+}
+
+/* Zone Cell */
+.zone-cell {
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 500;
+  color: #ffaa00 !important;
+}
+
+/* Distance */
+.distance-near {
+  color: #ffaa00 !important;
+  font-weight: bold;
+}
+
+/* FVG Validation Badges */
+.fvg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.fvg-icon {
+  font-size: 14px !important;
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.fvg-badge.fvg-valid {
+  background: rgba(0, 255, 136, 0.15);
+  color: #00ff88;
+  border: 1px solid rgba(0, 255, 136, 0.4);
+}
+
+.fvg-badge.fvg-invalid {
+  background: rgba(255, 152, 0, 0.15);
+  color: #ff9800;
+  border: 1px solid rgba(255, 152, 0, 0.4);
+}
+
+.fvg-badge.fvg-present {
+  background: rgba(0, 212, 255, 0.15);
+  color: #00d4ff;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+.fvg-badge.fvg-absent {
+  background: rgba(102, 102, 102, 0.1);
+  color: #666;
+  border: 1px solid rgba(102, 102, 102, 0.2);
+}
+
+.fvg-priority-badge {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(255, 215, 0, 0.2);
+  color: #ffd700;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+}
+
+/* Direction Badge */
+.direction-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.direction-long {
+  background: rgba(0, 255, 136, 0.2);
+  color: #00ff88;
+}
+
+.direction-short {
+  background: rgba(255, 68, 68, 0.2);
+  color: #ff4444;
+}
+
+/* Stop Loss */
+.stop-loss {
+  color: #ff6666 !important;
+}
+
+/* Targets */
+.targets {
+  color: #00ff88 !important;
+  font-size: 0.85rem;
+}
+
+/* Confidence Badge */
+.confidence-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.confidence-high {
+  background: rgba(0, 255, 136, 0.2);
+  color: #00ff88;
+}
+
+.confidence-medium {
+  background: rgba(255, 170, 0, 0.2);
+  color: #ffaa00;
+}
+
+.confidence-low {
+  background: rgba(255, 68, 68, 0.2);
+  color: #ff4444;
+}
+
+/* Status Badge */
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-fresh {
+  background: rgba(0, 212, 255, 0.2);
+  color: #00d4ff;
+}
+
+.status-mitigated {
+  background: rgba(255, 170, 0, 0.2);
+  color: #ffaa00;
+}
+
+.status-traded {
+  background: rgba(0, 255, 136, 0.2);
+  color: #00ff88;
+}
+
+.status-expired {
+  background: rgba(136, 136, 136, 0.2);
+  color: #888;
+}
+
+/* No Data */
+.no-data {
+  text-align: center;
+  padding: 40px;
+  color: #888;
+}
+
+.no-data mat-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 10px;
+}
+
+/* Explanation Card */
+.explanation-card {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.explanation-card mat-card-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.explanation-card mat-card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #00d4ff;
+}
+
+.explanation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+.explanation-item h5 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px 0;
+  color: #e0e0e0;
+}
+
+.explanation-item p {
+  margin: 0;
+  color: #888;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.loading-overlay p {
+  margin-top: 20px;
+  color: #00d4ff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .iob-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* SweetAlert2 Custom Styles */
+::ng-deep .iob-swal-popup {
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 12px;
+}
+
+::ng-deep .swal2-title {
+  color: #00d4ff !important;
+}
+
+::ng-deep .swal2-close {
+  color: #888 !important;
+}
+
+::ng-deep .swal2-close:hover {
+  color: #ff4444 !important;
+}
+
+/* IOB Counts in header */
+.iob-counts {
+  font-size: 0.8rem;
+  font-weight: normal;
+  color: #888;
+  margin-left: 10px;
+}
+
+/* Table actions with toggle */
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* Target Status Badge Styles */
+.target-status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
+  text-transform: uppercase;
+}
+
+.status-pending {
+  background: rgba(158, 158, 158, 0.2);
+  color: #9e9e9e;
+  border: 1px solid rgba(158, 158, 158, 0.4);
+}
+
+.status-t1-hit {
+  background: rgba(255, 152, 0, 0.2);
+  color: #ff9800;
+  border: 1px solid rgba(255, 152, 0, 0.4);
+}
+
+.status-t2-hit {
+  background: rgba(0, 188, 212, 0.2);
+  color: #00bcd4;
+  border: 1px solid rgba(0, 188, 212, 0.4);
+}
+
+.status-completed {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4caf50;
+  border: 1px solid rgba(76, 175, 80, 0.4);
+}
+
+.status-stopped {
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+  border: 1px solid rgba(244, 67, 54, 0.4);
+}
+
+/* Completed IOB row styling */
+.completed-row {
+  opacity: 0.7;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Slide toggle styling */
+::ng-deep .mat-mdc-slide-toggle {
+  margin-right: 10px;
+}
+
+::ng-deep .mat-mdc-slide-toggle .mdc-label {
+  color: #e0e0e0;
+  font-size: 13px;
+}
+
+/* Checkbox column styling */
+.mat-column-select {
+  width: 50px;
+  max-width: 50px;
+  padding-right: 8px !important;
+}
+
+::ng-deep .mat-mdc-checkbox .mdc-checkbox__background {
+  border-color: #888 !important;
+}
+
+::ng-deep .mat-mdc-checkbox.mat-accent .mdc-checkbox--selected .mdc-checkbox__background {
+  background-color: #00bcd4 !important;
+  border-color: #00bcd4 !important;
+}
+
+::ng-deep .mat-mdc-checkbox .mdc-label {
+  color: #e0e0e0;
+}
+
+/* Disabled checkbox styling */
+::ng-deep .mat-mdc-checkbox.mat-mdc-checkbox-disabled .mdc-checkbox__background {
+  opacity: 0.3;
+}
+
+/* Mark Completed button */
+.table-actions button[color="primary"] {
+  background: linear-gradient(135deg, #4caf50, #388e3c);
+  margin-right: 10px;
+}
+
+.table-actions button[color="primary"]:disabled {
+  background: rgba(76, 175, 80, 0.3);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Selected row highlight */
+tr.mat-mdc-row.selected-row {
+  background: rgba(0, 188, 212, 0.1);
+}
+
+/* ==================== Completed IOBs Section ==================== */
+
+.completed-iob-card {
+  background: linear-gradient(135deg, #1a1a2e, #1e2a3a) !important;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.completed-iob-card mat-card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #9c27b0;
+  font-size: 1.1rem;
+}
+
+.completed-iob-card mat-card-title mat-icon {
+  color: #9c27b0;
+}
+
+.completed-stats {
+  font-size: 0.85rem;
+  color: #888;
+  margin-left: 10px;
+  font-weight: normal;
+}
+
+.completed-stats .wins-count {
+  color: #4caf50;
+  font-weight: 600;
+}
+
+.completed-stats .losses-count {
+  color: #f44336;
+  font-weight: 600;
+}
+
+.completed-iob-table {
+  width: 100%;
+  background: transparent !important;
+}
+
+/* Completed IOB Table Header Styles */
+.completed-iob-table th {
+  background: rgba(156, 39, 176, 0.25) !important;
+  color: #e1bee7 !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  text-transform: uppercase;
+  padding: 14px 10px !important;
+  border-bottom: 2px solid rgba(156, 39, 176, 0.5) !important;
+  letter-spacing: 0.5px;
+}
+
+.completed-iob-table th.mat-header-cell,
+.completed-iob-table .mat-mdc-header-cell {
+  background: rgba(156, 39, 176, 0.25) !important;
+  color: #e1bee7 !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  text-transform: uppercase;
+  padding: 14px 10px !important;
+  border-bottom: 2px solid rgba(156, 39, 176, 0.5) !important;
+}
+
+/* Completed IOB Table Cell Styles */
+.completed-iob-table td {
+  color: #e0e0e0 !important;
+  padding: 12px 10px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  font-size: 0.85rem;
+}
+
+.completed-iob-table td.mat-cell,
+.completed-iob-table .mat-mdc-cell {
+  padding: 12px 10px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #e0e0e0 !important;
+  font-size: 0.85rem;
+}
+
+.completed-iob-table tr:hover td,
+.completed-iob-table tr.mat-row:hover td,
+.completed-iob-table tr.mat-mdc-row:hover td {
+  background: rgba(156, 39, 176, 0.15) !important;
+}
+
+/* ng-deep overrides for Angular Material table in completed section */
+::ng-deep .completed-iob-table .mat-mdc-header-row {
+  background: rgba(156, 39, 176, 0.25) !important;
+}
+
+::ng-deep .completed-iob-table .mat-mdc-header-cell {
+  background: rgba(156, 39, 176, 0.25) !important;
+  color: #e1bee7 !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  text-transform: uppercase;
+  padding: 14px 10px !important;
+  border-bottom: 2px solid rgba(156, 39, 176, 0.5) !important;
+  letter-spacing: 0.5px;
+}
+
+::ng-deep .completed-iob-table .mat-mdc-cell {
+  color: #e0e0e0 !important;
+  padding: 12px 10px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+::ng-deep .completed-iob-table .mat-mdc-row:hover {
+  background: rgba(156, 39, 176, 0.15) !important;
+}
+
+/* Outcome Badge Styles */
+.outcome-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 15px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.outcome-loss {
+  background: rgba(244, 67, 54, 0.2);
+  color: #ff6b6b;
+  border: 1px solid rgba(244, 67, 54, 0.4);
+}
+
+.outcome-full-win {
+  background: rgba(76, 175, 80, 0.2);
+  color: #69f0ae;
+  border: 1px solid rgba(76, 175, 80, 0.4);
+}
+
+.outcome-partial-win {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffd54f;
+  border: 1px solid rgba(255, 193, 7, 0.4);
+}
+
+.outcome-neutral {
+  background: rgba(158, 158, 158, 0.2);
+  color: #bdbdbd;
+  border: 1px solid rgba(158, 158, 158, 0.4);
+}
+
+/* P&L Value Styles */
+.pnl-value {
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.pnl-positive {
+  color: #69f0ae;
+}
+
+.pnl-negative {
+  color: #ff6b6b;
+}
+
+/* Target hit indicators */
+.target-item {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.target-item.target-hit {
+  color: #69f0ae;
+  font-weight: 700;
+  text-decoration: none;
+  background: rgba(76, 175, 80, 0.1);
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.target-separator {
+  color: #555;
+  margin: 0 2px;
+}
+
+/* Row styling based on outcome */
+tr.mat-row.outcome-loss {
+  background: rgba(244, 67, 54, 0.05);
+}
+
+tr.mat-row.outcome-full-win {
+  background: rgba(76, 175, 80, 0.05);
+}
+
+tr.mat-row.outcome-partial-win {
+  background: rgba(255, 193, 7, 0.03);
+}

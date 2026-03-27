@@ -1,0 +1,262 @@
+<configuration>
+    <property name="LOG_DIR" value="logs"/>
+    <property name="CONSOLE_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+    <property name="FILE_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"/>
+    <!-- Sifting appender routes logs into separate files based on MDC key 'appJobConfigNum' -->
+    <appender name="SIFT" class="ch.qos.logback.classic.sift.SiftingAppender">
+        <discriminator class="ch.qos.logback.classic.sift.MDCBasedDiscriminator">
+            <Key>appJobConfigNum</Key>
+            <DefaultValue>default</DefaultValue>
+        </discriminator>
+        <sift>
+            <appender name="ROLLING-${appJobConfigNum}" class="ch.qos.logback.core.rolling.RollingFileAppender">
+                <file>${LOG_DIR}/app-${appJobConfigNum}.log</file>
+                <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                    <fileNamePattern>${LOG_DIR}/app-${appJobConfigNum}-%d{yyyy-MM-dd}.log</fileNamePattern>
+                    <maxHistory>10</maxHistory>
+                </rollingPolicy>
+                <encoder>
+                    <pattern>${FILE_PATTERN}</pattern>
+                </encoder>
+            </appender>
+        </sift>
+    </appender>
+
+    <!-- Separate appender for CandlePredictionService logs -->
+    <appender name="CANDLE_PREDICTION_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/candle-prediction.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/candle-prediction-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- New dedicated appender for Simulated Trading service -->
+    <appender name="SIMULATED_TRADING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/simulated-trading.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/simulated-trading-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- New dedicated appender for Gamma Exposure service -->
+    <appender name="GAMMA_EXPOSURE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/gamma-exposure.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/gamma-exposure-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Dedicated appender for Internal Order Block (IOB) related logs -->
+    <appender name="IOB_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/iob.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/iob-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>60</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Dedicated appender for Liquidity Sweep Service logs -->
+    <appender name="LIQUIDITY_SWEEP_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/liquidity-sweep.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/liquidity-sweep-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC_SIFT" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>2048</queueSize>
+        <neverBlock>false</neverBlock>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="SIFT"/>
+    </appender>
+
+    <appender name="ASYNC_CANDLE_PREDICTION_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>2048</queueSize>
+        <neverBlock>false</neverBlock>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="CANDLE_PREDICTION_FILE"/>
+    </appender>
+
+    <appender name="ASYNC_SIMULATED_TRADING_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>2048</queueSize>
+        <neverBlock>false</neverBlock>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="SIMULATED_TRADING_FILE"/>
+    </appender>
+
+    <appender name="ASYNC_GAMMA_EXPOSURE_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>2048</queueSize>
+        <neverBlock>false</neverBlock>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="GAMMA_EXPOSURE_FILE"/>
+    </appender>
+
+    <appender name="ASYNC_IOB_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>2048</queueSize>
+        <neverBlock>false</neverBlock>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="IOB_FILE"/>
+    </appender>
+
+    <appender name="ASYNC_LIQUIDITY_SWEEP_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>2048</queueSize>
+        <neverBlock>false</neverBlock>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="LIQUIDITY_SWEEP_FILE"/>
+    </appender>
+
+    <!-- Logger for CandlePredictionServiceImpl - logs to separate file -->
+    <logger name="com.trading.kalyani.KTManager.service.serviceImpl.CandlePredictionServiceImpl" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_CANDLE_PREDICTION_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Logger for CandlePredictionScheduler - logs to same candle prediction file -->
+    <logger name="com.trading.kalyani.KTManager.config.CandlePredictionScheduler" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_CANDLE_PREDICTION_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Logger for SimulatedTradingServiceImpl - dedicated file -->
+    <logger name="com.trading.kalyani.KTManager.service.serviceImpl.SimulatedTradingServiceImpl" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_SIMULATED_TRADING_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Logger for GammaExposureServiceImpl - dedicated file -->
+    <logger name="com.trading.kalyani.KTManager.service.serviceImpl.GammaExposureServiceImpl" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_GAMMA_EXPOSURE_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Logger for LiquiditySweepServiceImpl - dedicated file -->
+    <logger name="com.trading.kalyani.KTManager.service.serviceImpl.LiquiditySweepServiceImpl" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_LIQUIDITY_SWEEP_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Logger for LiquiditySweep related controllers -->
+    <logger name="com.trading.kalyani.KTManager.controller.LiquiditySweepController" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_LIQUIDITY_SWEEP_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Logger for DailyJobServiceImpl - uses SIFT appender for appJobConfigNum-based routing -->
+    <logger name="com.trading.kalyani.KTManager.service.serviceImpl.DailyJobServiceImpl" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_SIFT"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- ==================== IOB (Internal Order Block) Loggers ==================== -->
+
+    <!-- Logger for IOB Scheduler - handles scheduled scanning and alerts -->
+    <logger name="com.trading.kalyani.KTManager.config.IOBScheduler" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_IOB_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Logger for InternalOrderBlockServiceImpl - core IOB detection logic -->
+    <logger name="com.trading.kalyani.KTManager.service.serviceImpl.InternalOrderBlockServiceImpl" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_IOB_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Logger for IOBAutoTradeServiceImpl - auto trading based on IOB signals -->
+    <logger name="com.trading.kalyani.KTManager.service.serviceImpl.IOBAutoTradeServiceImpl" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_IOB_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Logger for MarketStructureServiceImpl - market structure analysis for IOB -->
+    <logger name="com.trading.kalyani.KTManager.service.serviceImpl.MarketStructureServiceImpl" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_IOB_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Logger for VolumeProfileServiceImpl - volume analysis for IOB -->
+    <logger name="com.trading.kalyani.KTManager.service.serviceImpl.VolumeProfileServiceImpl" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_IOB_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Logger for RiskManagementServiceImpl - risk management for IOB trades -->
+    <logger name="com.trading.kalyani.KTManager.service.serviceImpl.RiskManagementServiceImpl" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_IOB_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Logger for PerformanceTrackingServiceImpl - IOB trade performance tracking -->
+    <logger name="com.trading.kalyani.KTManager.service.serviceImpl.PerformanceTrackingServiceImpl" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_IOB_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Logger for BacktestingServiceImpl - IOB backtesting -->
+    <logger name="com.trading.kalyani.KTManager.service.serviceImpl.BacktestingServiceImpl" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_IOB_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Logger for AutoTradingServiceImpl - automated trading -->
+    <logger name="com.trading.kalyani.KTManager.service.serviceImpl.AutoTradingServiceImpl" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_IOB_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Logger for IOB Controllers -->
+    <logger name="com.trading.kalyani.KTManager.controller.InternalOrderBlockController" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_IOB_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <logger name="com.trading.kalyani.KTManager.controller.IOBAutoTradeController" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_IOB_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <logger name="com.trading.kalyani.KTManager.controller.PerformanceController" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_IOB_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <logger name="com.trading.kalyani.KTManager.controller.MarketAnalysisController" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_IOB_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="ASYNC_SIFT"/>
+        <appender-ref ref="CONSOLE"/>
+
+    </root>
+</configuration>

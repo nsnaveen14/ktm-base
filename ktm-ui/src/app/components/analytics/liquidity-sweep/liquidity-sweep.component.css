@@ -1,0 +1,464 @@
+.liquidity-sweep-container {
+  margin-top: 20px;
+  padding: 16px;
+  background: #1a1a2e;
+  border-radius: 12px;
+  border: 1px solid #333;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #00d4ff;
+  font-size: 1.2rem;
+}
+
+.whale-emoji {
+  font-size: 1.5rem;
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.last-update {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+/* States */
+.loading-state, .error-state, .no-data-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  gap: 12px;
+  color: #888;
+}
+
+.error-state {
+  color: #ff6b6b;
+}
+
+.error-state mat-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+}
+
+/* Signal Card */
+.signal-card {
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #16213e 100%);
+}
+
+.signal-card.bullish {
+  background: linear-gradient(135deg, #1a472a 0%, #0d2818 100%);
+  border-left: 4px solid #00ff88;
+}
+
+.signal-card.bearish {
+  background: linear-gradient(135deg, #4a1a1a 0%, #2d0d0d 100%);
+  border-left: 4px solid #ff4444;
+}
+
+.signal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.signal-type {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.confidence {
+  margin-left: auto;
+  color: #aaa;
+}
+
+.signal-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+}
+
+.level-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.level-item label {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.level-item .value {
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.level-item .value.positive {
+  color: #00ff88;
+}
+
+.level-item .value.negative {
+  color: #ff4444;
+}
+
+.invalid-setup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffa500;
+  font-size: 0.9rem;
+}
+
+/* Stats Row */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #16213e;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.stat-item mat-icon {
+  color: #00d4ff;
+  font-size: 28px;
+  width: 28px;
+  height: 28px;
+}
+
+.stat-item.whale mat-icon {
+  color: #6c63ff;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+/* Panels Grid */
+.panels-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.panel-card {
+  background: #16213e;
+  border: 1px solid #333;
+}
+
+.panel-card mat-card-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #333;
+}
+
+.panel-card mat-card-content {
+  padding: 16px;
+}
+
+/* Market Structure */
+.liquidity-levels {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.level-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.level-group h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #888;
+}
+
+.level-group.bsl .levels {
+  color: #ff6b6b;
+}
+
+.level-group.ssl .levels {
+  color: #00ff88;
+}
+
+.levels {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.level {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.level.secondary {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.current-price {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  background: #1a1a2e;
+  border-radius: 4px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.current-price mat-icon {
+  color: #00d4ff;
+  font-size: 12px;
+  width: 12px;
+  height: 12px;
+}
+
+/* Quant Engine */
+.quant-engine.whale-active {
+  border: 1px solid #6c63ff;
+  box-shadow: 0 0 20px rgba(108, 99, 255, 0.2);
+}
+
+.quant-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.metric label {
+  color: #888;
+}
+
+.metric .value {
+  font-weight: 500;
+}
+
+.metric .value.highlight {
+  color: #6c63ff;
+  font-weight: 700;
+}
+
+.metric.whale-type {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #333;
+}
+
+.metric.no-whale .muted {
+  color: #666;
+  font-style: italic;
+}
+
+mat-chip.absorption {
+  background: #1e3a5f !important;
+  color: #00d4ff !important;
+}
+
+mat-chip.propulsion {
+  background: #3a1e5f !important;
+  color: #ff00ff !important;
+}
+
+mat-chip.accumulation {
+  background: #3a3a1e !important;
+  color: #ffff00 !important;
+}
+
+/* Trend Momentum */
+.trend-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.trend-metrics .value.oversold {
+  color: #00ff88;
+}
+
+.trend-metrics .value.overbought {
+  color: #ff6b6b;
+}
+
+/* Sweep Detection */
+.sweep-detection.sweep-active {
+  border: 1px solid #ffa500;
+  box-shadow: 0 0 20px rgba(255, 165, 0, 0.2);
+}
+
+.sweep-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sweep-type {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.sweep-type.bsl_sweep {
+  background: rgba(255, 107, 107, 0.2);
+  color: #ff6b6b;
+}
+
+.sweep-type.ssl_sweep {
+  background: rgba(0, 255, 136, 0.2);
+  color: #00ff88;
+}
+
+.swept-level {
+  margin-left: auto;
+  font-size: 1.1rem;
+}
+
+.confirmations {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.confirmation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.confirmation.confirmed {
+  color: #00ff88;
+}
+
+.confirmation mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.no-sweep {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  color: #666;
+}
+
+/* Signal Classes */
+mat-chip.bullish, mat-chip.buy {
+  background: #1a472a !important;
+  color: #00ff88 !important;
+}
+
+mat-chip.bearish, mat-chip.sell {
+  background: #4a1a1a !important;
+  color: #ff6b6b !important;
+}
+
+mat-chip.strong {
+  background: #1a5f1a !important;
+  color: #00ff00 !important;
+}
+
+mat-chip.moderate {
+  background: #5f5f1a !important;
+  color: #ffff00 !important;
+}
+
+mat-chip.weak {
+  background: #5f3a1a !important;
+  color: #ffa500 !important;
+}
+
+mat-chip.neutral {
+  background: #333 !important;
+  color: #888 !important;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .panels-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .signal-body {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+}
+

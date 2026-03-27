@@ -1,0 +1,13 @@
+#appConfigTabs {
+    width: 100%;
+  }
+  
+  mat-tab-group {
+    background: #fafbfc; /* Optional: Add a background color */
+    border-radius: 4px;
+  }
+  
+  mat-tab-group .mat-tab-label {
+    font-size: 10px;
+    font-weight: bold;
+  }

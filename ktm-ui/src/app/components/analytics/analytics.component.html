@@ -1,0 +1,592 @@
+<div class="analytics-container">
+  <!-- Deviation Alert Popup -->
+  <div class="deviation-alert-overlay" *ngIf="showDeviationAlert" (click)="dismissAlert()">
+    <div class="deviation-alert-popup" [ngClass]="deviationAlertType" (click)="$event.stopPropagation()">
+      <div class="alert-header">
+        <mat-icon class="alert-icon">{{deviationAlertType === 'danger' ? 'error' : 'warning'}}</mat-icon>
+        <span class="alert-title">Prediction Deviation Alert</span>
+        <button mat-icon-button class="close-btn" (click)="dismissAlert()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <div class="alert-body">
+        <pre class="alert-message">{{deviationAlertMessage}}</pre>
+      </div>
+      <div class="alert-footer">
+        <span class="auto-close-text">Auto-closing in 8 seconds...</span>
+        <button mat-stroked-button color="primary" (click)="dismissAlert()">Dismiss</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header with Job Controls -->
+  <div class="analytics-header">
+    <div class="header-left">
+      <h4>
+        <mat-icon>analytics</mat-icon>
+        Candle Prediction Analytics
+      </h4>
+      <mat-chip [ngClass]="getDirectionClass(tradeRecommendation)">
+        <mat-icon>{{getBiasIcon(tradeRecommendation)}}</mat-icon>
+        {{tradeRecommendation}}
+      </mat-chip>
+    </div>
+
+    <!-- Live Tick Data Display -->
+    <app-live-tick></app-live-tick>
+
+    <div class="header-right">
+      <!-- Status Indicators -->
+      <div class="status-indicators">
+        <span class="status-indicator" [ngClass]="{'active': isTickerConnected, 'inactive': !isTickerConnected}">
+          <span class="status-dot"></span>
+          {{isTickerConnected ? 'Ticker Connected' : 'Ticker Disconnected'}}
+        </span>
+        <span class="status-indicator" [ngClass]="{'active': jobStatus?.isWithinMarketHours, 'inactive': !jobStatus?.isWithinMarketHours}">
+          <span class="status-dot"></span>
+          {{jobStatus?.isWithinMarketHours ? 'Market Open' : 'Market Closed'}}
+        </span>
+      </div>
+      <button mat-raised-button color="primary" (click)="refreshAll()" [disabled]="isLoading">
+        <mat-icon>refresh</mat-icon> Refresh
+      </button>
+      <mat-slide-toggle
+        [checked]="isJobActive"
+        (change)="toggleJob()"
+        [disabled]="isLoading || !isTickerConnected || !jobStatus?.isWithinMarketHours"
+        color="primary">
+        {{isJobActive ? 'Job Running' : 'Job Stopped'}}
+      </mat-slide-toggle>
+    </div>
+  </div>
+
+  <!-- Job Status Summary -->
+  <div class="status-cards">
+    <mat-card class="status-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>schedule</mat-icon>
+        <mat-card-title>Prediction Runs</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="big-number">{{jobStatus?.totalPredictionRuns || 0}}</span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="status-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>verified</mat-icon>
+        <mat-card-title>Verifications</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="big-number">{{jobStatus?.totalVerificationRuns || 0}}</span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="status-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>precision_manufacturing</mat-icon>
+        <mat-card-title>Session Accuracy</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="big-number">{{formatPercent(jobStatus?.sessionAccuracy)}}</span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="status-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>trending_up</mat-icon>
+        <mat-card-title>Direction Accuracy</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="big-number">{{formatPercent(deviationSummary?.avgDirectionAccuracy)}}</span>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <!-- Left Column - Chart and Predictions -->
+    <div class="left-column">
+      <!-- Prediction Chart -->
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>show_chart</mat-icon>
+            Prediction vs Actual
+          </mat-card-title>
+          <div class="card-actions">
+            <button mat-icon-button (click)="executePredictionNow()"
+                    matTooltip="Generate Prediction Now" [disabled]="isLoading">
+              <mat-icon>play_arrow</mat-icon>
+            </button>
+            <button mat-icon-button (click)="verifyPredictionsNow()"
+                    matTooltip="Verify Predictions Now" [disabled]="isLoading" color="accent">
+              <mat-icon>verified</mat-icon>
+            </button>
+          </div>
+        </mat-card-header>
+        <mat-card-content>
+          <highcharts-chart
+            [Highcharts]="Highcharts"
+            [options]="chartOptions"
+            [update]="updateFlag"
+            [callbackFunction]="chartCallback"
+            [(update)]="updateFlag"
+            style="width: 100%; height: 350px; display: block;">
+          </highcharts-chart>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- EMA Chart -->
+      <mat-card class="ema-chart-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>show_chart</mat-icon>
+            EMA Crossover (9-21-50)
+          </mat-card-title>
+          <div class="ema-indicators" *ngIf="emaChartData && emaChartData.dataPoints">
+            <span class="ema-value ema9" *ngIf="emaChartData.currentEMA9">
+              9: {{formatNumber(emaChartData.currentEMA9)}}
+            </span>
+            <span class="ema-value ema21" *ngIf="emaChartData.currentEMA21">
+              21: {{formatNumber(emaChartData.currentEMA21)}}
+            </span>
+            <span class="ema-value ema50" *ngIf="emaChartData.currentEMA50">
+              50: {{formatNumber(emaChartData.currentEMA50)}}
+            </span>
+            <mat-chip [ngClass]="getSignalClass(emaChartData.tradeSignal || '')" class="signal-chip" *ngIf="emaChartData.tradeSignal">
+              {{emaChartData.tradeSignal}} {{emaChartData.signalStrength ? '(' + emaChartData.signalStrength + ')' : ''}}
+            </mat-chip>
+          </div>
+        </mat-card-header>
+        <mat-card-content>
+          <!-- Trade Signal Panel -->
+          <div class="trade-signal-panel" *ngIf="emaChartData && emaChartData.tradeSignal">
+            <div class="signal-header" [ngClass]="getSignalClass(emaChartData.tradeSignal)">
+              <mat-icon>{{getSignalIcon(emaChartData.tradeSignal)}}</mat-icon>
+              <span class="signal-text">{{emaChartData.tradeSignal}} Signal</span>
+              <span class="alignment-badge" *ngIf="emaChartData.emaAlignment">{{emaChartData.emaAlignment}}</span>
+            </div>
+            <div class="signal-details" *ngIf="emaChartData.signalReason">
+              <p>{{emaChartData.signalReason}}</p>
+            </div>
+            <div class="spread-info">
+              <span *ngIf="emaChartData.emaSpread9_21 != null">
+                9-21 Spread: <strong [ngClass]="{'positive': emaChartData.emaSpread9_21 > 0, 'negative': emaChartData.emaSpread9_21 < 0}">
+                  {{emaChartData.emaSpread9_21 > 0 ? '+' : ''}}{{formatNumber(emaChartData.emaSpread9_21)}}
+                </strong>
+              </span>
+              <span *ngIf="emaChartData.emaSpread21_50 != null">
+                21-50 Spread: <strong [ngClass]="{'positive': emaChartData.emaSpread21_50 > 0, 'negative': emaChartData.emaSpread21_50 < 0}">
+                  {{emaChartData.emaSpread21_50 > 0 ? '+' : ''}}{{formatNumber(emaChartData.emaSpread21_50)}}
+                </strong>
+              </span>
+            </div>
+          </div>
+
+          <div *ngIf="emaChartData && emaChartData.dataPoints && emaChartData.dataPoints > 0; else noEmaData">
+            <highcharts-chart
+              [Highcharts]="Highcharts"
+              [options]="emaChartOptions"
+              [update]="emaUpdateFlag"
+              [callbackFunction]="emaChartCallback"
+              [(update)]="emaUpdateFlag"
+              style="width: 100%; height: 280px; display: block;">
+            </highcharts-chart>
+          </div>
+          <ng-template #noEmaData>
+            <div class="no-data-message">
+              <mat-icon>info_outline</mat-icon>
+              <p>{{emaChartData?.error || 'Waiting for market data...'}}</p>
+              <span class="hint">EMA chart will populate when trading session is active and market data is available.</span>
+            </div>
+          </ng-template>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Latest Predictions Table -->
+      <mat-card class="predictions-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>list</mat-icon>
+            Latest Predictions
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <table class="predictions-table">
+            <thead>
+              <tr>
+                <th>Seq</th>
+                <th>Time</th>
+                <th>Predicted</th>
+                <th>Actual</th>
+                <th>Deviation</th>
+                <th>Trend</th>
+                <th>Confidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let pred of latestPredictions; trackBy: trackByPrediction">
+                <td>{{pred.predictionSequence}}</td>
+                <td>{{formatTime(pred.candleStartTime)}}</td>
+                <td>{{formatNumber(pred.closePrice)}}</td>
+                <td>{{pred.verified ? formatNumber(pred.actualClosePrice) : '-'}}</td>
+                <td [ngClass]="{'positive': pred.actualClosePrice && pred.closePrice > pred.actualClosePrice,
+                               'negative': pred.actualClosePrice && pred.closePrice < pred.actualClosePrice}">
+                  {{pred.verified ? formatNumber(Math.abs(pred.closePrice - pred.actualClosePrice)) : '-'}}
+                </td>
+                <td>
+                  <mat-chip [ngClass]="getDirectionClass(pred.trendDirection)" class="small-chip">
+                    {{pred.trendDirection}}
+                  </mat-chip>
+                </td>
+                <td>{{formatPercent(pred.confidenceScore)}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Right Column - Trade Setups and Analysis -->
+    <div class="right-column">
+      <!-- Latest Trade Setup -->
+      <mat-card class="trade-setup-card" *ngIf="latestTradeSetup">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>trending_up</mat-icon>
+            Latest Trade Setup
+          </mat-card-title>
+          <mat-chip [ngClass]="getDirectionClass(latestTradeSetup.tradeDirection)">
+            {{latestTradeSetup.tradeDirection}}
+          </mat-chip>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="trade-setup-details">
+            <div class="setup-row">
+              <div class="setup-item">
+                <label>Entry</label>
+                <span class="value">{{formatNumber(latestTradeSetup.entryPrice)}}</span>
+              </div>
+              <div class="setup-item">
+                <label>Stop Loss</label>
+                <span class="value negative">{{formatNumber(latestTradeSetup.stopLoss)}}</span>
+              </div>
+            </div>
+            <div class="setup-row">
+              <div class="setup-item">
+                <label>Target 1</label>
+                <span class="value positive">{{formatNumber(latestTradeSetup.target1)}}</span>
+              </div>
+              <div class="setup-item">
+                <label>Target 2</label>
+                <span class="value positive">{{formatNumber(latestTradeSetup.target2)}}</span>
+              </div>
+            </div>
+            <div class="setup-row">
+              <div class="setup-item">
+                <label>R:R Ratio</label>
+                <span class="value">{{formatNumber(latestTradeSetup.riskRewardRatio1)}}:1</span>
+              </div>
+              <div class="setup-item">
+                <label>Confidence</label>
+                <span class="value">{{formatPercent(latestTradeSetup.confidence)}}</span>
+              </div>
+            </div>
+            <mat-divider></mat-divider>
+            <div class="setup-row">
+              <div class="setup-item full-width">
+                <label>Setup Type</label>
+                <span class="value">{{latestTradeSetup.setupType}}</span>
+              </div>
+            </div>
+            <div class="setup-row" *ngIf="latestTradeSetup.suggestedOptionType">
+              <div class="setup-item">
+                <label>Option</label>
+                <span class="value">{{latestTradeSetup.suggestedOptionType}}</span>
+              </div>
+              <div class="setup-item">
+                <label>Strike</label>
+                <span class="value">{{latestTradeSetup.suggestedStrike}}</span>
+              </div>
+            </div>
+            <div class="setup-reason" *ngIf="latestTradeSetup.entryReason">
+              <label>Reason:</label>
+              <p>{{latestTradeSetup.entryReason}}</p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="no-setup-card" *ngIf="!latestTradeSetup">
+        <mat-card-content>
+          <mat-icon>hourglass_empty</mat-icon>
+          <p>No active trade setup</p>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Performance Summary -->
+      <mat-card class="performance-card" *ngIf="tradeSetupPerformance">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>insights</mat-icon>
+            Performance (Weekly)
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="performance-grid">
+            <div class="perf-item">
+              <label>Win Rate</label>
+              <span class="value">{{formatPercent(tradeSetupPerformance.weeklyWinRate)}}</span>
+            </div>
+            <div class="perf-item">
+              <label>P/L</label>
+              <span class="value" [ngClass]="{'positive': tradeSetupPerformance.weeklyProfitLoss > 0,
+                                              'negative': tradeSetupPerformance.weeklyProfitLoss < 0}">
+                {{formatNumber(tradeSetupPerformance.weeklyProfitLoss)}}
+              </span>
+            </div>
+            <div class="perf-item">
+              <label>Today Setups</label>
+              <span class="value">{{tradeSetupPerformance.todaySetupsCount}}</span>
+            </div>
+            <div class="perf-item">
+              <label>Avg R:R</label>
+              <span class="value">{{formatNumber(tradeSetupPerformance.averageRiskReward)}}</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Technical Analysis Accordion -->
+      <mat-accordion>
+        <!-- Deviation Analysis -->
+        <mat-expansion-panel [expanded]="true">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon>assessment</mat-icon>
+              Deviation Analysis
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+          <div class="analysis-content">
+            <div class="analysis-row">
+              <div class="analysis-item">
+                <label>Avg Deviation</label>
+                <span>{{deviationSummary?.avgDeviationPercent != null ? formatPercent(deviationSummary!.avgDeviationPercent) : '-'}}</span>
+              </div>
+              <div class="analysis-item">
+                <label>Bias</label>
+                <span [ngClass]="getDirectionClass(deviationSummary?.latestBiasDirection || '')">
+                  {{deviationSummary?.latestBiasDirection || 'NEUTRAL'}}
+                </span>
+              </div>
+            </div>
+            <div class="analysis-row">
+              <div class="analysis-item">
+                <label>Cumulative Sessions</label>
+                <span>{{deviationSummary?.cumulativeSessions ?? '-'}}</span>
+              </div>
+              <div class="analysis-item">
+                <label>Cumulative Accuracy</label>
+                <span>{{deviationSummary?.cumulativeAccuracy != null ? formatPercent(deviationSummary!.cumulativeAccuracy) : '-'}}</span>
+              </div>
+            </div>
+            <div class="analysis-row" *ngIf="deviationSummary?.dataSource === 'historical'">
+              <div class="analysis-item full-width">
+                <span class="info-text">📊 Showing historical data from {{deviationSummary?.lastCalculationDate}}</span>
+              </div>
+            </div>
+            <div class="analysis-row" *ngIf="deviationSummary?.message">
+              <div class="analysis-item full-width">
+                <span class="info-text">ℹ️ {{deviationSummary?.message}}</span>
+              </div>
+            </div>
+            <button mat-stroked-button (click)="calculateDeviationNow()" [disabled]="isLoading">
+              <mat-icon>calculate</mat-icon> Calculate Now
+            </button>
+          </div>
+        </mat-expansion-panel>
+
+        <!-- Correction Factors -->
+        <mat-expansion-panel>
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon>tune</mat-icon>
+              Correction Factors
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+          <div class="analysis-content" *ngIf="correctionFactors">
+            <div class="analysis-row">
+              <div class="analysis-item">
+                <label>Close Correction</label>
+                <span>{{formatNumber(correctionFactors.closeCorrection)}} pts</span>
+              </div>
+              <div class="analysis-item">
+                <label>Volatility Multiplier</label>
+                <span>{{formatNumber(correctionFactors.volatilityMultiplier)}}</span>
+              </div>
+            </div>
+            <div class="analysis-row">
+              <div class="analysis-item">
+                <label>Hourly Correction</label>
+                <span>{{formatNumber(correctionFactors.hourlyCorrection)}} pts</span>
+              </div>
+              <div class="analysis-item">
+                <label>Direction Accuracy</label>
+                <span>{{formatPercent(correctionFactors.directionAccuracy)}}</span>
+              </div>
+            </div>
+          </div>
+        </mat-expansion-panel>
+
+        <!-- Greeks Analysis -->
+        <mat-expansion-panel>
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon>functions</mat-icon>
+              Greeks Analysis
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+          <div class="analysis-content">
+            <div class="analysis-row" *ngIf="latestTradeSetup">
+              <div class="analysis-item">
+                <label>PCR Value</label>
+                <span>{{formatNumber(latestTradeSetup.pcrValue)}}</span>
+              </div>
+              <div class="analysis-item">
+                <label>Max Pain Strike</label>
+                <span>{{latestTradeSetup.maxPainStrike}}</span>
+              </div>
+            </div>
+            <div class="analysis-row" *ngIf="deviationSummary?.jobStats">
+              <div class="analysis-item">
+                <label>Latest VIX</label>
+                <span>{{ todayDeviations && todayDeviations.length > 0 ? formatNumber(todayDeviations[todayDeviations.length-1].avgVix) : '-' }}</span>
+              </div>
+              <div class="analysis-item">
+                <label>Latest PCR</label>
+                <span>{{ todayDeviations && todayDeviations.length > 0 ? formatNumber(todayDeviations[todayDeviations.length-1].avgPcr) : '-' }}</span>
+              </div>
+            </div>
+          </div>
+        </mat-expansion-panel>
+
+        <!-- Smart Money Concepts -->
+        <mat-expansion-panel>
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon>psychology</mat-icon>
+              SMC Analysis
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+          <div class="analysis-content" *ngIf="latestTradeSetup">
+            <div class="analysis-row">
+              <div class="analysis-item">
+                <label>SMC Bias</label>
+                <span [ngClass]="getDirectionClass(latestTradeSetup.smcBias)">
+                  {{latestTradeSetup.smcBias || 'N/A'}}
+                </span>
+              </div>
+              <div class="analysis-item">
+                <label>SMC Confidence</label>
+                <span>{{formatPercent(latestTradeSetup.smcConfidence)}}</span>
+              </div>
+            </div>
+          </div>
+        </mat-expansion-panel>
+
+        <!-- Channel & Fibonacci -->
+        <mat-expansion-panel>
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon>timeline</mat-icon>
+              Channel & Fibonacci
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+          <div class="analysis-content" *ngIf="latestTradeSetup">
+            <div class="analysis-row">
+              <div class="analysis-item">
+                <label>Channel Type</label>
+                <span>{{latestTradeSetup.channelType || 'N/A'}}</span>
+              </div>
+              <div class="analysis-item">
+                <label>Nearest Fib Level</label>
+                <span>{{latestTradeSetup.nearestFibLevel || 'N/A'}}</span>
+              </div>
+            </div>
+            <div class="analysis-row">
+              <div class="analysis-item">
+                <label>Market Trend</label>
+                <span [ngClass]="getDirectionClass(latestTradeSetup.marketTrend)">
+                  {{latestTradeSetup.marketTrend}}
+                </span>
+              </div>
+            </div>
+          </div>
+        </mat-expansion-panel>
+
+        <!-- Today's Trade Setups -->
+        <mat-expansion-panel>
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon>history</mat-icon>
+              Today's Trade Setups ({{todayTradeSetups.length}})
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+          <div class="trade-setups-list">
+            <div class="setup-list-item" *ngFor="let setup of todayTradeSetups; trackBy: trackBySetup">
+              <div class="setup-header">
+                <mat-chip [ngClass]="getDirectionClass(setup.tradeDirection)" class="small-chip">
+                  {{setup.tradeDirection}}
+                </mat-chip>
+                <span class="setup-time">{{formatTime(setup.createdAt)}}</span>
+              </div>
+              <div class="setup-body">
+                <span>Entry: {{formatNumber(setup.entryPrice)}}</span>
+                <span>SL: {{formatNumber(setup.stopLoss)}}</span>
+                <span>T1: {{formatNumber(setup.target1)}}</span>
+              </div>
+            </div>
+            <div *ngIf="todayTradeSetups.length === 0" class="no-data">
+              No trade setups today
+            </div>
+          </div>
+        </mat-expansion-panel>
+
+        <!-- Today's Deviations -->
+        <mat-expansion-panel>
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon>difference</mat-icon>
+              Today's Deviations ({{todayDeviations.length}})
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+          <div class="deviations-list">
+            <div class="deviation-item" *ngFor="let dev of todayDeviations; trackBy: trackByDeviation">
+              <div class="dev-header">
+                <span class="batch-id">{{dev.batchId}}</span>
+                <span class="verified-count">{{dev.predictionsVerified}} verified</span>
+              </div>
+              <div class="dev-body">
+                <span>Avg Dev: {{formatPercent(dev.avgCloseDeviationPercent)}}</span>
+                <span>Dir Acc: {{formatPercent(dev.directionAccuracyPercent)}}</span>
+                <span [ngClass]="getDirectionClass(dev.biasDirection)">{{dev.biasDirection}}</span>
+              </div>
+            </div>
+            <div *ngIf="todayDeviations.length === 0" class="no-data">
+              No deviations calculated yet
+            </div>
+          </div>
+        </mat-expansion-panel>
+
+      </mat-accordion>
+    </div>
+  </div>
+
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <mat-spinner diameter="50"></mat-spinner>
+  </div>
+</div>
+

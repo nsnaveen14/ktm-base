@@ -1,0 +1,253 @@
+<div class="iob-trades-container">
+  <!-- Header -->
+  <div class="trades-header">
+    <div class="header-left">
+      <h4>
+        <mat-icon>timeline</mat-icon>
+        IOB Trade Tracking
+      </h4>
+      <p class="subtitle">Real-time monitoring of IOB signal execution and outcomes</p>
+    </div>
+
+    <!-- Auto-Refresh Status -->
+    <div class="realtime-status" [class.connected]="autoRefresh">
+      <span class="status-dot"></span>
+      <span class="status-text">{{ autoRefresh ? 'Live (10s)' : 'Paused' }}</span>
+    </div>
+
+    <app-live-tick></app-live-tick>
+
+    <div class="header-right">
+      <button mat-raised-button color="primary" (click)="refreshData()" [disabled]="isLoading">
+        <mat-icon>refresh</mat-icon> Refresh
+      </button>
+      <button mat-icon-button [color]="autoRefresh ? 'primary' : 'default'"
+              (click)="toggleAutoRefresh()"
+              matTooltip="Toggle Auto-Refresh">
+        <mat-icon>{{autoRefresh ? 'autorenew' : 'sync_disabled'}}</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Instrument Selection (similar to IOB Analysis) -->
+  <div class="instrument-selector">
+    <mat-chip-set>
+      <mat-chip
+        [attr.highlighted]="selectedInstrument === 'ALL' ? 'true' : null"
+        (click)="selectInstrument('ALL')">
+        <mat-icon>layers</mat-icon> All
+      </mat-chip>
+      <mat-chip
+        [attr.highlighted]="selectedInstrument === 'NIFTY' ? 'true' : null"
+        (click)="selectInstrument('NIFTY')">
+        <mat-icon>trending_up</mat-icon> NIFTY 50
+      </mat-chip>
+    </mat-chip-set>
+
+    <mat-chip-set class="status-filter">
+      <mat-chip
+        [attr.highlighted]="selectedFilter === 'ALL' ? 'true' : null"
+        (click)="selectFilter('ALL')">
+        All Trades
+      </mat-chip>
+      <mat-chip
+        [attr.highlighted]="selectedFilter === 'ACTIVE' ? 'true' : null"
+        (click)="selectFilter('ACTIVE')">
+        <mat-icon>play_circle</mat-icon> Active
+      </mat-chip>
+      <mat-chip
+        [attr.highlighted]="selectedFilter === 'COMPLETED' ? 'true' : null"
+        (click)="selectFilter('COMPLETED')">
+        <mat-icon>check_circle</mat-icon> Completed
+      </mat-chip>
+    </mat-chip-set>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="stats-cards">
+    <mat-card class="stat-card active-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>play_circle</mat-icon>
+        <mat-card-title>Active Trades</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="big-number">{{stats.activeTrades}}</span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card wins-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>emoji_events</mat-icon>
+        <mat-card-title>Today's Wins</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="big-number win">{{stats.todayWins}}</span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card losses-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>cancel</mat-icon>
+        <mat-card-title>Today's Losses</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="big-number loss">{{stats.todayLosses}}</span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card pnl-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>account_balance_wallet</mat-icon>
+        <mat-card-title>Today's P&L</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="big-number" [ngClass]="stats.todayPnL >= 0 ? 'win' : 'loss'">
+          {{stats.todayPnL >= 0 ? '+' : ''}}{{formatNumber(stats.todayPnL)}} pts
+        </span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card winrate-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>percent</mat-icon>
+        <mat-card-title>Win Rate</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="big-number">{{formatNumber(stats.winRate, 1)}}%</span>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Trade Timelines -->
+  <mat-card class="timelines-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>history</mat-icon>
+        Trade Timelines
+        <span class="timeline-count">({{tradeTimelines.length}} trades)</span>
+      </mat-card-title>
+      <div class="timeline-actions">
+        <mat-slide-toggle
+          [(ngModel)]="showOlderTrades"
+          (change)="onShowOlderTradesChange()"
+          color="accent"
+          matTooltip="Show trades from previous days">
+          Show Older Trades ({{getOlderTradesCount()}})
+        </mat-slide-toggle>
+      </div>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="timelines-container" *ngIf="tradeTimelines.length > 0">
+        <div class="timeline-item" *ngFor="let timeline of tradeTimelines"
+             [ngClass]="getOutcomeClass(timeline.iob.tradeOutcome)">
+
+          <!-- Trade Header -->
+          <div class="timeline-header">
+            <div class="trade-info">
+              <span class="instrument-badge">{{timeline.iob.instrumentName}}</span>
+              <span class="type-badge" [ngClass]="getTypeClass(timeline.iob.obType)">
+                <mat-icon>{{getDirectionIcon(timeline.iob.tradeDirection)}}</mat-icon>
+                {{timeline.iob.obType?.replace('_IOB', '')}}
+              </span>
+              <span class="direction-badge" [ngClass]="getDirectionClass(timeline.iob.tradeDirection)">
+                {{timeline.iob.tradeDirection}}
+              </span>
+            </div>
+            <div class="trade-outcome">
+              <span class="outcome-badge" [ngClass]="getOutcomeClass(timeline.iob.tradeOutcome)">
+                <mat-icon *ngIf="timeline.iob.tradeOutcome === 'WIN'">emoji_events</mat-icon>
+                <mat-icon *ngIf="timeline.iob.tradeOutcome === 'LOSS'">cancel</mat-icon>
+                <mat-icon *ngIf="timeline.iob.tradeOutcome === 'ACTIVE'">play_circle</mat-icon>
+                <mat-icon *ngIf="!timeline.iob.tradeOutcome">schedule</mat-icon>
+                {{timeline.iob.tradeOutcome || 'PENDING'}}
+              </span>
+              <span class="pnl-badge" [ngClass]="getPnLClass(timeline.iob)" *ngIf="timeline.iob.pointsCaptured !== null && timeline.iob.pointsCaptured !== undefined">
+                {{timeline.iob.pointsCaptured >= 0 ? '+' : ''}}{{formatNumber(timeline.iob.pointsCaptured)}} pts
+              </span>
+            </div>
+          </div>
+
+          <!-- Trade Details -->
+          <div class="trade-details">
+            <div class="detail-item">
+              <span class="detail-label">Zone</span>
+              <span class="detail-value">₹{{formatNumber(timeline.iob.zoneLow)}} - ₹{{formatNumber(timeline.iob.zoneHigh)}}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Entry Price</span>
+              <span class="detail-value">₹{{formatNumber(timeline.iob.actualEntryPrice || timeline.iob.entryPrice)}}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Stop Loss</span>
+              <span class="detail-value stop-loss">₹{{formatNumber(timeline.iob.stopLoss)}}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Targets</span>
+              <span class="detail-value targets">
+                <span [class.hit]="timeline.iob.target1AlertSent">T1: {{formatNumber(timeline.iob.target1)}}</span>
+                <span [class.hit]="timeline.iob.target2AlertSent">T2: {{formatNumber(timeline.iob.target2)}}</span>
+                <span [class.hit]="timeline.iob.target3AlertSent">T3: {{formatNumber(timeline.iob.target3)}}</span>
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Duration</span>
+              <span class="detail-value">{{getDuration(timeline.iob)}}</span>
+            </div>
+            <div class="detail-item" *ngIf="timeline.iob.signalConfidence">
+              <span class="detail-label">Confidence</span>
+              <span class="detail-value">{{formatNumber(timeline.iob.signalConfidence, 1)}}%</span>
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="progress-container">
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="getProgressPercent(timeline.iob)"
+                   [ngClass]="getOutcomeClass(timeline.iob.tradeOutcome)">
+              </div>
+            </div>
+            <span class="progress-label">{{getProgressLabel(timeline.iob)}}</span>
+          </div>
+
+          <!-- Timeline Events -->
+          <div class="events-timeline" *ngIf="timeline.events.length > 0">
+            <div class="event" *ngFor="let event of timeline.events">
+              <div class="event-marker">
+                <mat-icon>{{event.icon}}</mat-icon>
+              </div>
+              <div class="event-content">
+                <div class="event-time">{{formatTime(event.time)}}</div>
+                <div class="event-description">{{event.description}}</div>
+                <div class="event-price" *ngIf="event.price">₹{{formatNumber(event.price)}}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Max Excursion Info -->
+          <div class="excursion-info" *ngIf="timeline.iob.maxFavorableExcursion || timeline.iob.maxAdverseExcursion">
+            <div class="excursion-item favorable" *ngIf="timeline.iob.maxFavorableExcursion">
+              <mat-icon>arrow_upward</mat-icon>
+              <span>Max Profit: +{{formatNumber(timeline.iob.maxFavorableExcursion)}} pts</span>
+            </div>
+            <div class="excursion-item adverse" *ngIf="timeline.iob.maxAdverseExcursion">
+              <mat-icon>arrow_downward</mat-icon>
+              <span>Max Drawdown: -{{formatNumber(timeline.iob.maxAdverseExcursion)}} pts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="tradeTimelines.length === 0" class="no-data">
+        <mat-icon>info</mat-icon>
+        <p>No IOB trades to display. Trades will appear here once IOB signals trigger entries when price touches the zone.</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Loading trade data...</p>
+  </div>
+</div>
+

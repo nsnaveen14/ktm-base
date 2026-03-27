@@ -1,0 +1,69 @@
+
+IOB Signal Trading Guide: From a Trader's Perspective
+When an IOB Signal is DETECTED
+1. Identify the IOB Type
+BULLISH_IOB (Demand Zone): Price swept a low, then reversed upward with a strong BOS (Break of Structure)
+BEARISH_IOB (Supply Zone): Price swept a high, then reversed downward with a strong BOS
+2. Validate the Signal
+Check
+What to Look For
+BOS Confirmation
+Structure break must be clear and decisive
+FVG Presence
+Fair Value Gap adds confluence (higher probability)
+Signal Confidence
+Higher confidence = better setup
+Distance to Zone
+Is price far enough to give you time to prepare?
+3. Plan the Trade
+Entry: At zone midpoint or zone edge (conservative vs aggressive)
+Stop Loss: Below zone low (bullish) or above zone high (bearish)
+Targets: Use the pre-calculated T1, T2, T3 levels
+Risk-Reward: Ensure R:R ≥ 1:2 minimum
+4. Wait for Price to Return
+Set alerts at the IOB zone
+Do NOT chase price; let it come to you
+
+When an IOB Signal is MITIGATED
+1. Understand What Mitigation Means
+Price has entered the IOB zone (between zoneLow and zoneHigh). This is your trade trigger.
+2. Execute the Trade
+BULLISH_IOB Mitigated → Look for LONG entry
+BEARISH_IOB Mitigated → Look for SHORT entry
+3. Confirm Entry (Optional Refinement)
+Wait for a reaction candle (rejection wick, engulfing pattern)
+Use lower timeframe confirmation (e.g., if IOB on 15min, confirm on 5min)
+4. Manage the Position
+Stage
+Action
+Entry
+Execute at zone with proper position sizing
+T1 Hit
+Book partial profits (25-50%)
+T2 Hit
+Trail stop to entry or T1
+T3 Hit
+Exit remaining position
+Stop Loss Hit
+Accept the loss, move on
+5. Mark the IOB as Used
+After trade execution (win or loss), the IOB is no longer valid for re-entry.
+
+Quick Decision Flowchart
+IOB Detected
+    │├─► Is confidence HIGH? ─► No ─► Skip or reduce size
+    │
+    └─► Yes ─► Set alert at zone
+                    │
+                    ▼
+              Price enters zone (MITIGATED)
+                    │
+                    ├─► Reaction visible? ─► Yes ─► ENTER TRADE
+                    │
+                    └─► No reaction ─► Wait or skip
+
+Key Takeaways
+Detection = Preparation phase (plan, size, set alerts)
+Mitigation = Execution phase (trigger, enter, manage)
+Never trade an IOB after it's fully mitigated without reaction
+Always respect stop loss levels
